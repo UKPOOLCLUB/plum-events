@@ -6,6 +6,7 @@ class Event(models.Model):
     code = models.CharField(max_length=8, unique=True)  # e.g. 4–8 letter join code
     date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
+    has_started = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name} ({self.code})"

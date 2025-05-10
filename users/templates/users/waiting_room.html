@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block extra_head %}
+    <meta http-equiv="refresh" content="5">  <!-- Refresh every 5 seconds -->
+{% endblock %}
+
+
+{% block content %}
+    <h2 class="mb-3 text-center">Waiting Room: {{ event.name }}</h2>
+    <p class="text-center text-muted">Event Code: <strong>{{ event.code }}</strong></p>
+
+    <h4 class="mt-4">Players Joined:</h4>
+    <ul class="list-group">
+        {% for participant in participants %}
+            <li class="list-group-item">{{ participant.username }}</li>
+        {% empty %}
+            <li class="list-group-item text-muted">No players yet.</li>
+        {% endfor %}
+    </ul>
+
+    <p class="text-center mt-4 text-secondary">Waiting for the host to start the event...</p>
+{% endblock %}

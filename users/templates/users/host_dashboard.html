@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2 class="mb-4">Host Control Panel</h2>
+
+    {% for event in events %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ event.name }}</h5>
+                <p class="card-text">
+                    Code: <strong>{{ event.code }}</strong><br>
+                    Date: {{ event.date }}<br>
+                    Players: {{ event.participants.count }}<br>
+                    Status: {% if event.has_started %}<span class="text-success">Started</span>{% else %}<span class="text-warning">Not Started</span>{% endif %}
+                </p>
+
+                {% if not event.has_started %}
+                    <form method="post" action="{% url 'start_event' event.code %}">
+                        {% csrf_token %}
+                        <button class="btn btn-danger">Start Event</button>
+                    </form>
+                {% else %}
+                    <div class="alert alert-success mb-0">In Progress</div>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <p>No events available.</p>
+    {% endfor %}
+{% endblock %}
