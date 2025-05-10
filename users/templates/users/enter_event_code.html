@@ -1,17 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Enter Event Code</title>
-</head>
-<body>
-    <h2>Enter Your Event Code</h2>
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 class="mb-4 text-center">Enter Your Event Code</h2>
+
     {% if error %}
-        <p style="color: red;">{{ error }}</p>
+        <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
-    <form method="post">
+
+    <form method="post" class="text-center">
         {% csrf_token %}
-        <input type="text" name="code" placeholder="e.g. ABC123" required>
-        <button type="submit">Join</button>
+        <div class="mb-3">
+            <input type="text" name="code" class="form-control form-control-lg" placeholder="e.g. ABC123" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg">Join</button>
     </form>
-</body>
-</html>
+{% endblock %}
