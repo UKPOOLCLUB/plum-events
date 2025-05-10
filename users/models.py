@@ -1,0 +1,13 @@
+from django.db import models
+import uuid
+from events.models import Event  # Add at the top
+
+class Participant(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = models.CharField(max_length=50)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='participants', null=True, blank=True)
+    total_score = models.IntegerField(default=0)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.username

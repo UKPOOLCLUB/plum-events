@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter Event Code</title>
+</head>
+<body>
+    <h2>Enter Your Event Code</h2>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="code" placeholder="e.g. ABC123" required>
+        <button type="submit">Join</button>
+    </form>
+</body>
+</html>
