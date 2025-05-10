@@ -4,4 +4,8 @@ from . import views
 urlpatterns = [
     path('enter/', views.enter_event_code, name='enter_event_code'),
     path('join/<str:event_code>/', views.enter_username, name='enter_username'),
+    path('waiting/<str:event_code>/', views.waiting_room, name='waiting_room'),
+    path('host/', views.host_dashboard, name='host_dashboard'),
+    path('host/start/<str:event_code>/', views.start_event, name='start_event'),
+
 ]
