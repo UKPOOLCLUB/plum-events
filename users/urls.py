@@ -7,5 +7,5 @@ urlpatterns = [
     path('waiting/<str:event_code>/', views.waiting_room, name='waiting_room'),
     path('host/', views.host_dashboard, name='host_dashboard'),
     path('host/start/<str:event_code>/', views.start_event, name='start_event'),
-
+    path('leaderboard/<str:event_code>/', views.leaderboard, name='live_leaderboard'),
 ]
