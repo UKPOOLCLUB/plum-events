@@ -1,13 +1,34 @@
 {% extends "base.html" %}
+{% load custom_filters %}
+
 {% block content %}
 <h2 class="mb-4 text-center">Leaderboard – {{ event.name }}</h2>
 
+<!-- Game Navigation -->
+<div class="mb-4">
+    <h5 class="text-muted">Games in this event:</h5>
+    <div class="d-flex flex-wrap gap-2">
+        {% for i in selected_games %}
+            {% if i == "mini_golf" %}
+                <a href="{% url 'my_golf_score_entry' event.code %}" class="btn btn-outline-primary btn-sm">
+                    {{ selected_game_names|index:forloop.counter0 }}
+                </a>
+            {% else %}
+                <a href="#" class="btn btn-outline-secondary btn-sm disabled">
+                    {{ selected_game_names|index:forloop.counter0 }}
+                </a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Leaderboard Table -->
 <table class="table table-striped table-bordered text-center">
     <thead class="table-dark">
         <tr>
             <th>Player</th>
             {% for name in event_names %}
-                <th>{{ name }}</th>
+                <th>{{ name }}</th>  <!-- ✅ Correct -->
             {% endfor %}
             <th>Total</th>
             <th>Wins</th>
@@ -18,7 +39,7 @@
             <tr>
                 <td>{{ row.username }}</td>
                 {% for name in event_names %}
-                    <td>{{ row.scores.name }}</td>
+                    <td>{{ row.scores|dict_get:name }}</td>  <!-- ✅ Correct -->
                 {% endfor %}
                 <td><strong>{{ row.total }}</strong></td>
                 <td>{{ row.wins }}</td>

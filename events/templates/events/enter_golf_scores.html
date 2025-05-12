@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load golf_extras %}
+
+{% block content %}
+<h2 class="text-center mb-4">Mini-Golf – Group Scorecard</h2>
+
+<p class="text-center text-muted">
+    Scorekeeper: <strong>{{ scorekeeper.username }}</strong>
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    <table class="table table-bordered text-center align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Player</th>
+                {% for hole in holes %}
+                    <th>Hole {{ hole }}</th>
+                {% endfor %}
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+                <td>
+                    {{ player.username }}
+                    {% if player == scorekeeper %}
+                        <span class="badge bg-primary ms-1">Scorekeeper</span>
+                    {% endif %}
+                </td>
+                {% if can_edit %}
+                    {% for hole in holes %}
+                        <td>
+                            <input type="number"
+                               name="player_{{ player.username }}_hole_{{ hole }}"
+                               class="form-control text-center score-input"
+                               min="1" max="6"
+                               data-username="{{ player.username }}"
+                               data-hole="{{ hole }}"
+                               value="{{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}"
+                               required>
+                        </td>
+                    {% endfor %}
+                {% else %}
+                    {% for hole in holes %}
+                        <td>-</td>
+                    {% endfor %}
+                {% endif %}
+                <td id="total_{{ player.username }}"><strong>0</strong></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if can_edit %}
+        <div class="text-center mt-3">
+            <button type="submit" class="btn btn-success">Submit Scores</button>
+        </div>
+    {% endif %}
+</form>
+
+<div class="text-center mt-4">
+    <a href="{% url 'live_leaderboard' event.code %}" class="btn btn-secondary">Back to Leaderboard</a>
+</div>
+
+<style>
+/* Remove number input spinners for all browsers */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield; /* Firefox */
+    text-align: center;
+    padding: 4px;
+    font-weight: bold;
+    font-size: 16px;
+    width: 45px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const inputs = document.querySelectorAll('.score-input');
+
+    function updateTotals() {
+        const playerTotals = {};
+
+        inputs.forEach(input => {
+            const username = input.dataset.username;
+            const value = parseInt(input.value) || 0;
+
+            if (!playerTotals[username]) {
+                playerTotals[username] = 0;
+            }
+
+            playerTotals[username] += value;
+        });
+
+        for (const username in playerTotals) {
+            const totalCell = document.getElementById(`total_${username}`);
+            if (totalCell) {
+                totalCell.innerHTML = `<strong>${playerTotals[username]}</strong>`;
+            }
+        }
+    }
+
+    // Save score on input change
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            updateTotals();
+
+            const username = input.dataset.username;
+            const hole = input.dataset.hole;
+            const strokes = input.value;
+
+            // Logging for debug
+            console.log("Saving score", {
+                group_id: "{{ group.id }}",
+                username: username,
+                hole: hole,
+                strokes: strokes
+            });
+
+            fetch("{% url 'save_golf_score' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: new URLSearchParams({
+                    group_id: "{{ group.id }}",
+                    username: username,
+                    hole: hole,
+                    strokes: strokes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error("Failed to save score:", data.error);
+                }
+            })
+            .catch(error => {
+                console.error("AJAX error saving score:", error);
+            });
+        });
+    });
+
+    // Calculate totals on page load
+    updateTotals();
+});
+</script>
+
+{% endblock %}
