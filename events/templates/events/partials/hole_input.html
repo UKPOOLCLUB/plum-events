@@ -1,0 +1,14 @@
+{% load golf_extras %}
+
+{% if can_edit %}
+    <input type="number"
+           name="player_{{ player.username }}_hole_{{ hole }}"
+           class="form-control text-center score-input"
+           min="1" max="6"
+           data-username="{{ player.username }}"
+           data-hole="{{ hole }}"
+           value="{{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}"
+           required>
+{% else %}
+    {{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}
+{% endif %}

@@ -6,7 +6,8 @@ from .models import (
     TableTennisConfig,
     KillerConfig,
     DartsConfig,
-    MiniGolfScorecard
+    MiniGolfScorecard,
+    MiniGolfGroup,
 )
 
 @admin.register(Event)
@@ -24,6 +25,13 @@ class MiniGolfConfigAdmin(admin.ModelAdmin):
 class MiniGolfScorecardAdmin(admin.ModelAdmin):
     list_display = ('group', 'last_updated')
     readonly_fields = ('last_updated',)
+
+@admin.register(MiniGolfGroup)
+class MiniGolfGroupAdmin(admin.ModelAdmin):
+    list_display = ('id', 'event', 'scorekeeper', 'created_at')
+    list_filter = ('event',)
+    search_fields = ('event__name', 'scorekeeper__username')
+    filter_horizontal = ('players',)  # If players is a ManyToManyField
 
 @admin.register(PoolLeagueConfig)
 class PoolLeagueConfigAdmin(admin.ModelAdmin):

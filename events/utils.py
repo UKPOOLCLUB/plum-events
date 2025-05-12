@@ -4,15 +4,14 @@ from random import shuffle
 from .models import MiniGolfGroup
 from users.models import Participant
 
-def generate_golf_groups(players, max_group_size=4, min_group_size=3):
-    player_list = list(players)
+
+def generate_golf_groups(event, max_group_size=4, min_group_size=3):
+    # Fetch and shuffle all participants for this event
+    player_list = list(Participant.objects.filter(event=event))
     shuffle(player_list)
     total = len(player_list)
 
-    # Calculate ideal group count
     group_count = math.ceil(total / max_group_size)
-
-    # Distribute players as evenly as possible
     base_group_size = total // group_count
     remainder = total % group_count
 

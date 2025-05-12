@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
 from events.utils import generate_golf_groups
-from events.models import MiniGolfConfig, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisConfig
+from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisConfig
 from django.db.models import Sum, Count
 
 
@@ -36,12 +36,11 @@ def enter_username(request, event_code):
 
         if not username:
             error = "Please enter a username."
+        elif Participant.objects.filter(username=username, event=event).exists():
+            error = "That username is already taken for this event."
         else:
             participant = Participant.objects.create(username=username, event=event)
-
-            # ✅ Save participant ID in session
             request.session['participant_id'] = str(participant.id)
-
             return redirect('waiting_room', event_code=event.code)
 
     return render(request, 'users/enter_username.html', {'event': event, 'error': error})
@@ -89,11 +88,19 @@ def start_event(request, event_code):
         event.save()
 
         if "mini_golf" in event.selected_games:
-            # ✅ Create golf config if missing
+            # ✅ Create config if needed
             MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 9})
 
-            # ✅ Then generate groups
-            generate_golf_groups(event)
+            # ✅ Generate groups
+            groups = generate_golf_groups(event)  # <-- this returns a list of lists
+
+            for group_players in groups:
+                group = MiniGolfGroup.objects.create(
+                    event=event,
+                    scorekeeper=group_players[0]  # ✅ First player is scorekeeper
+                )
+                group.players.set(group_players)
+                group.save()
 
         return redirect('host_dashboard')
 
