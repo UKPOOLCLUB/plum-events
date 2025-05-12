@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from events.models import Event
+from events.models import Event, GAME_CHOICES
 from .models import Participant
 from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
+from events.utils import generate_golf_groups
+from events.models import MiniGolfConfig, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisConfig
 from django.db.models import Sum, Count
 
 
@@ -12,9 +14,13 @@ def enter_event_code(request):
 
     if request.method == 'POST':
         code = request.POST.get('code')
+
         try:
             event = Event.objects.get(code__iexact=code)
-            return redirect('enter_username', event_code=event.code)
+            if event.has_started:
+                error = "Code invalid — this tournament has already started."
+            else:
+                return redirect('enter_username', event_code=event.code)
         except Event.DoesNotExist:
             error = "Invalid code. Please try again."
 
@@ -31,8 +37,11 @@ def enter_username(request, event_code):
         if not username:
             error = "Please enter a username."
         else:
-            # Optionally: check for duplicates
-            Participant.objects.create(username=username, event=event)
+            participant = Participant.objects.create(username=username, event=event)
+
+            # ✅ Save participant ID in session
+            request.session['participant_id'] = str(participant.id)
+
             return redirect('waiting_room', event_code=event.code)
 
     return render(request, 'users/enter_username.html', {'event': event, 'error': error})
@@ -53,14 +62,12 @@ def waiting_room(request, event_code):
     if participant_id:
         try:
             participant = Participant.objects.get(id=participant_id, event=event)
-            is_host = participant.username == event.host_name  # Optional now that you're host
         except Participant.DoesNotExist:
             pass
 
     return render(request, 'users/waiting_room.html', {
         'event': event,
-        'participants': participants,
-        'is_host': is_host
+        'participants': participants
     })
 
 
@@ -80,6 +87,14 @@ def start_event(request, event_code):
     if request.method == 'POST':
         event.has_started = True
         event.save()
+
+        if "mini_golf" in event.selected_games:
+            # ✅ Create golf config if missing
+            MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 9})
+
+            # ✅ Then generate groups
+            generate_golf_groups(event)
+
         return redirect('host_dashboard')
 
     return redirect('host_dashboard')
@@ -93,6 +108,8 @@ def leaderboard(request, event_code):
     # Replace this with DB-driven logic later
     event_names = ["Mini-Golf", "E-Darts", "Ping Pong", "Pool", "Killer"]
     fake_results = defaultdict(lambda: {name: 0 for name in event_names})
+    game_dict = dict(GAME_CHOICES)
+    selected_game_names = [game_dict.get(code, code) for code in event.selected_games]
 
     # TEMP: assign fake scores
     for i, participant in enumerate(participants):
@@ -114,14 +131,20 @@ def leaderboard(request, event_code):
             'username': participant.username,
             'scores': scores,
             'total': total,
-            'wins': event_wins
+            'wins': event_wins,
         })
 
     # Sort: total desc, wins desc, name asc
     leaderboard_data.sort(key=lambda x: (-x['total'], -x['wins'], x['username'].lower()))
 
+    active_game = 'Mini-Golf'  # ← Hardcoded for now
+
     return render(request, 'users/leaderboard.html', {
         'event': event,
         'leaderboard': leaderboard_data,
-        'event_names': event_names
+        'event_names': event_names,
+        'active_game': active_game,
+        'selected_games': event.selected_games,
+        'selected_game_names': selected_game_names,
+
     })
