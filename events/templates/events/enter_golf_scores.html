@@ -14,9 +14,14 @@
         <thead class="table-light">
             <tr>
                 <th>Player</th>
-                {% for hole in holes %}
-                    <th>Hole {{ hole }}</th>
-                {% endfor %}
+                {% if holes|length == 18 %}
+                    {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
+                    <th>Front 9</th>
+                    {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
+                    <th>Back 9</th>
+                {% else %}
+                    {% for hole in holes %}<th>{{ hole }}</th>{% endfor %}
+                {% endif %}
                 <th>Total</th>
             </tr>
         </thead>
@@ -29,29 +34,35 @@
                         <span class="badge bg-primary ms-1">Scorekeeper</span>
                     {% endif %}
                 </td>
-                {% if can_edit %}
-                    {% for hole in holes %}
+
+                {% if holes|length == 18 %}
+                    {% for hole in holes|slice:":9" %}
                         <td>
-                            <input type="number"
-                               name="player_{{ player.username }}_hole_{{ hole }}"
-                               class="form-control text-center score-input"
-                               min="1" max="6"
-                               data-username="{{ player.username }}"
-                               data-hole="{{ hole }}"
-                               value="{{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}"
-                               required>
+                            {% include "events/partials/hole_input.html" with player=player hole=hole %}
                         </td>
                     {% endfor %}
+                    <td id="front9_{{ player.username }}"><strong>0</strong></td>
+
+                    {% for hole in holes|slice:"9:" %}
+                        <td>
+                            {% include "events/partials/hole_input.html" with player=player hole=hole %}
+                        </td>
+                    {% endfor %}
+                    <td id="back9_{{ player.username }}"><strong>0</strong></td>
                 {% else %}
                     {% for hole in holes %}
-                        <td>-</td>
+                        <td>
+                            {% include "events/partials/hole_input.html" with player=player hole=hole %}
+                        </td>
                     {% endfor %}
                 {% endif %}
+
                 <td id="total_{{ player.username }}"><strong>0</strong></td>
             </tr>
-        {% endfor %}
+            {% endfor %}
         </tbody>
     </table>
+
 
     {% if can_edit %}
         <div class="text-center mt-3">
@@ -86,26 +97,40 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputs = document.querySelectorAll('.score-input');
 
     function updateTotals() {
-        const playerTotals = {};
+    const playerScores = {};
 
-        inputs.forEach(input => {
-            const username = input.dataset.username;
-            const value = parseInt(input.value) || 0;
+    document.querySelectorAll('.score-input').forEach(input => {
+        const username = input.dataset.username;
+        const hole = parseInt(input.dataset.hole);
+        const strokes = parseInt(input.value) || 0;
 
-            if (!playerTotals[username]) {
-                playerTotals[username] = 0;
-            }
-
-            playerTotals[username] += value;
-        });
-
-        for (const username in playerTotals) {
-            const totalCell = document.getElementById(`total_${username}`);
-            if (totalCell) {
-                totalCell.innerHTML = `<strong>${playerTotals[username]}</strong>`;
-            }
+        if (!playerScores[username]) {
+            playerScores[username] = {
+                front9: 0,
+                back9: 0,
+                total: 0
+            };
         }
+
+        if (hole <= 9) {
+            playerScores[username].front9 += strokes;
+        } else {
+            playerScores[username].back9 += strokes;
+        }
+
+        playerScores[username].total += strokes;
+    });
+
+    for (const [username, totals] of Object.entries(playerScores)) {
+        const frontCell = document.getElementById(`front9_${username}`);
+        const backCell = document.getElementById(`back9_${username}`);
+        const totalCell = document.getElementById(`total_${username}`);
+
+        if (frontCell) frontCell.innerHTML = `<strong>${totals.front9}</strong>`;
+        if (backCell) backCell.innerHTML = `<strong>${totals.back9}</strong>`;
+        if (totalCell) totalCell.innerHTML = `<strong>${totals.total}</strong>`;
     }
+}
 
     // Save score on input change
     inputs.forEach(input => {

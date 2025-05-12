@@ -36,7 +36,7 @@ def enter_golf_scores(request, group_id):
     return render(request, 'events/enter_golf_scores.html', {
         'group': group,
         'players': players,
-        'holes': range(1, holes + 1),
+        'holes': list(range(1, holes + 1)),  # So it's indexable
         'can_edit': can_edit,
         'scorekeeper': group.scorekeeper,
         'totals': totals,
