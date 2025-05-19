@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="text-center mb-4">Table Tennis – Winner Stays On</h2>
+
+<div class="mb-4 text-center">
+    <p><strong>Target Wins:</strong> {{ config.target_wins }}</p>
+</div>
+
+{% if players|length >= 2 %}
+    <div class="d-flex justify-content-around mb-3">
+        <div class="card p-3 w-45">
+            <h4 class="text-center">Player 1</h4>
+            <p class="text-center">{{ players.0.participant.username }}</p>
+            <form method="post" action="{% url 'submit_table_tennis_result' event.id players.0.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success w-100">🏆 {{ players.0.participant.username }} Wins</button>
+            </form>
+        </div>
+        <div class="card p-3 w-45">
+            <h4 class="text-center">Player 2</h4>
+            <p class="text-center">{{ players.1.participant.username }}</p>
+            <form method="post" action="{% url 'submit_table_tennis_result' event.id players.1.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success w-100">🏆 {{ players.1.participant.username }} Wins</button>
+            </form>
+        </div>
+    </div>
+
+    {% if players|length > 2 %}
+        <div class="text-center mb-4">
+            <p><strong>Up Next:</strong> {{ players.2.participant.username }}</p>
+        </div>
+    {% endif %}
+{% else %}
+    <p class="text-center text-danger">Not enough players in the queue.</p>
+{% endif %}
+
+<h3 class="mt-5 text-center">Leaderboard</h3>
+<table class="table table-bordered text-center align-middle mt-3">
+    <thead class="table-light">
+        <tr>
+            <th>Player</th>
+            <th>Wins</th>
+            <th>Status</th>
+            <th>Points</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in all_players %}
+        <tr
+          {% if p.id == players.0.id or p.id == players.1.id %}
+            class="table-success"
+          {% elif players|length > 2 and p.id == players.2.id %}
+            class="table-warning"
+          {% endif %}
+        >
+            <td>{{ p.participant.username }}</td>
+            <td>{{ p.games_won }}</td>
+            <td>
+                {% if p.has_finished %}
+                    Finished ({{ p.finish_rank }}<sup>{% if p.finish_rank == 1 %}st{% elif p.finish_rank == 2 %}nd{% elif p.finish_rank == 3 %}rd{% else %}th{% endif %}})
+                {% elif p.id == players.0.id or p.id == players.1.id %}
+                    Playing
+                {% elif players|length > 2 and p.id == players.2.id %}
+                    Up next
+                {% else %}
+                    Waiting
+                {% endif %}
+            </td>
+            <td>{{ p.points_awarded }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="text-center mt-4">
+    <a href="{% url 'live_leaderboard' event.code %}" class="btn btn-secondary">Back to Leaderboard</a>
+</div>
+
+{% endblock %}

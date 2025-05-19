@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import JSONField
 import uuid
 
 
@@ -8,6 +9,8 @@ class Participant(models.Model):
     event = models.ForeignKey('events.Event', on_delete=models.CASCADE, related_name='participants')
     total_score = models.IntegerField(default=0)
     joined_at = models.DateTimeField(auto_now_add=True)
+
+    kept_scores = models.JSONField(default=dict)
 
     class Meta:
         unique_together = ('username', 'event')

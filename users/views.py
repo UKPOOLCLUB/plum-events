@@ -4,9 +4,11 @@ from .models import Participant
 from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
+from pprint import pprint
 from events.utils import generate_golf_groups
-from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisConfig
+from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisPlayer, TableTennisConfig
 from django.db.models import Sum, Count
+from random import shuffle
 
 
 def enter_event_code(request):
@@ -87,71 +89,112 @@ def start_event(request, event_code):
         event.has_started = True
         event.save()
 
+        # ✅ Mini Golf Setup
         if "mini_golf" in event.selected_games:
-            # ✅ Create config if needed
             MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 9})
-
-            # ✅ Generate groups
-            groups = generate_golf_groups(event)  # <-- this returns a list of lists
-
+            groups = generate_golf_groups(event)
             for group_players in groups:
                 group = MiniGolfGroup.objects.create(
                     event=event,
-                    scorekeeper=group_players[0]  # ✅ First player is scorekeeper
+                    scorekeeper=group_players[0]
                 )
                 group.players.set(group_players)
                 group.save()
+
+        # ✅ Table Tennis Setup
+        if "table_tennis" in event.selected_games:
+            # Create default config if not already set
+            TableTennisConfig.objects.get_or_create(event=event, defaults={
+                'target_wins': 7,
+                'first_place_points': 50,
+                'second_place_points': 35,
+                'third_place_points': 25,
+                'fourth_place_points': 15,
+                'default_points': 5,
+            })
+
+            participants = list(event.participants.all())
+            shuffle(participants)
+
+            for idx, participant in enumerate(participants):
+                TableTennisPlayer.objects.create(
+                    event=event,
+                    participant=participant,
+                    queue_position=idx
+                )
 
         return redirect('host_dashboard')
 
     return redirect('host_dashboard')
 
-
 def leaderboard(request, event_code):
     event = get_object_or_404(Event, code__iexact=event_code)
     participants = event.participants.all()
 
-    # Placeholder results: simulate each participant having event scores
-    # Replace this with DB-driven logic later
-    event_names = ["Mini-Golf", "E-Darts", "Ping Pong", "Pool", "Killer"]
-    fake_results = defaultdict(lambda: {name: 0 for name in event_names})
+    print("\n=== EVENT SELECTED GAMES ===")
+    pprint(event.selected_games)
+
+    # Map game codes to readable names
     game_dict = dict(GAME_CHOICES)
     selected_game_names = [game_dict.get(code, code) for code in event.selected_games]
 
-    # TEMP: assign fake scores
-    for i, participant in enumerate(participants):
-        for j, event_name in enumerate(event_names):
-            fake_results[participant][event_name] = (i + j) % 5  # just some dummy data
+    print("\n=== GAME NAME MAPPING ===")
+    for code in event.selected_games:
+        print(f"{code} → {game_dict.get(code, code)}")
 
-    leaderboard_data = []
+    # Gather scores using username as key
+    results = defaultdict(lambda: {name: 0 for name in selected_game_names})
+    participant_map = {}
 
     for participant in participants:
-        scores = fake_results[participant]
-        total = sum(scores.values())
+        username = participant.username
+        participant_map[username] = participant
+
+        print(f"\n--- Participant: {username} ---")
+        for code in event.selected_games:
+            name = game_dict.get(code, code)
+            game_data = participant.kept_scores.get(code, {})
+            print(f"{code} ({name}) → {game_data}")
+
+            if isinstance(game_data, dict):
+                results[username][name] = game_data.get("points", 0)
+            elif isinstance(game_data, int):
+                results[username][name] = game_data
+            else:
+                results[username][name] = 0
+
+    print("\n=== RESULTS TABLE ===")
+    pprint(dict(results))
+
+    # Build leaderboard
+    leaderboard_data = []
+
+    for username, score_row in results.items():
+        total_points = sum(score_row.values())
         event_wins = 0
-        for event_name in event_names:
-            max_score = max([p_scores[event_name] for p_scores in fake_results.values()])
-            if scores[event_name] == max_score:
+
+        for game in selected_game_names:
+            top_score = max(user_scores[game] for user_scores in results.values())
+            if score_row[game] == top_score and top_score > 0:
                 event_wins += 1
 
         leaderboard_data.append({
-            'username': participant.username,
-            'scores': scores,
-            'total': total,
-            'wins': event_wins,
+            "username": username,
+            "scores": score_row,
+            "total": total_points,
+            "wins": event_wins,
         })
 
-    # Sort: total desc, wins desc, name asc
-    leaderboard_data.sort(key=lambda x: (-x['total'], -x['wins'], x['username'].lower()))
+    leaderboard_data.sort(key=lambda x: (-x["total"], -x["wins"], x["username"].lower()))
 
-    active_game = 'Mini-Golf'  # ← Hardcoded for now
+    print("\n=== FINAL LEADERBOARD ===")
+    pprint(leaderboard_data)
 
-    return render(request, 'users/leaderboard.html', {
-        'event': event,
-        'leaderboard': leaderboard_data,
-        'event_names': event_names,
-        'active_game': active_game,
-        'selected_games': event.selected_games,
-        'selected_game_names': selected_game_names,
-
+    return render(request, "users/leaderboard.html", {
+        "event": event,
+        "leaderboard": leaderboard_data,
+        "event_names": selected_game_names,
+        "active_game": selected_game_names[0] if selected_game_names else None,
+        "selected_games": event.selected_games,
+        "selected_game_names": selected_game_names,
     })

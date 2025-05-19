@@ -10,5 +10,10 @@
            value="{{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}"
            required>
 {% else %}
-    {{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}
+    <span class="readonly-score score-input"
+          data-username="{{ player.username }}"
+          data-hole="{{ hole }}">
+        {{ scores|nested_score:player.username|nested_score:hole|stringformat:'s' }}
+    </span>
 {% endif %}
+

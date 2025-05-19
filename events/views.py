@@ -1,8 +1,9 @@
 from django.forms import modelformset_factory
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import MiniGolfGroup, MiniGolfScore, MiniGolfScorecard
+from .models import MiniGolfGroup, MiniGolfScore, MiniGolfScorecard, MiniGolfConfig, TableTennisConfig, TableTennisPlayer
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from events.models import Event, Participant
@@ -23,7 +24,10 @@ def enter_golf_scores(request, group_id):
     if participant_id:
         try:
             participant = Participant.objects.get(id=participant_id, event=event)
-            can_edit = (participant == group.scorekeeper)
+            if participant == group.scorekeeper:
+                can_edit = True
+                if scorecard and scorecard.submitted:
+                    can_edit = False
         except Participant.DoesNotExist:
             pass
 
@@ -90,3 +94,113 @@ def redirect_to_golf_group(request, event_code):
         return HttpResponseForbidden("You are not assigned to a golf group.")
 
 
+
+def submit_golf_scorecard(request, group_id):
+    group = get_object_or_404(MiniGolfGroup, id=group_id)
+    scorecard = MiniGolfScorecard.objects.get(group=group)
+    config = MiniGolfConfig.objects.get(event=group.event)
+    holes = config.holes
+
+    print("Hello Submit_score")
+
+    # Validate complete scorecards
+    for username, hole_scores in scorecard.data.items():
+        if len(hole_scores) < holes:
+            return JsonResponse({"success": False, "error": f"{username} has not completed all holes."})
+
+    # Calculate totals
+    player_totals = []
+    for username, hole_scores in scorecard.data.items():
+        total = sum(int(v) for v in hole_scores.values())
+        player_totals.append((username, total))
+
+    # Sort by strokes (ascending = better)
+    player_totals.sort(key=lambda x: x[1])
+
+    # Assign points
+    for i, (username, strokes) in enumerate(player_totals):
+        participant = Participant.objects.get(username=username, event=group.event)
+
+        # Assign position-based points
+        if i == 0:
+            points = config.points_first
+        elif i == 1:
+            points = config.points_second
+        elif i == 2:
+            points = config.points_third
+        else:
+            points = 0
+
+        if not participant.kept_scores:
+            participant.kept_scores = {}
+
+        # ✅ Store both points and finishing position
+        participant.kept_scores["mini_golf"] = {
+            "points": points,
+            "position": i + 1,
+            "strokes": strokes,
+        }
+        participant.save()
+
+    scorecard.submitted = True
+    scorecard.save()
+
+    return redirect('live_leaderboard', event_code=group.event.code)
+
+
+def table_tennis_game_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    players = TableTennisPlayer.objects.filter(event=event).order_by('queue_position')
+    config = event.table_tennis_config
+    all_players = TableTennisPlayer.objects.filter(event=event).order_by('-games_won', 'queue_position')
+
+    context = {
+        'event': event,
+        'players': players,  # ordered queue (playing, next, waiting)
+        'all_players': all_players,  # for leaderboard
+        'config': config,
+    }
+    return render(request, 'events/table_tennis_game.html', context)
+
+
+def submit_table_tennis_result(request, event_id, winner_id):
+    event = get_object_or_404(Event, id=event_id)
+    config = event.table_tennis_config
+    players = list(TableTennisPlayer.objects.filter(event=event, has_finished=False).order_by('queue_position'))
+
+    if len(players) < 2:
+        return redirect('table_tennis_game_view', event_id=event.id)
+
+    p1, p2 = players[0], players[1]
+    winner = p1 if p1.id == winner_id else p2
+    loser = p2 if winner == p1 else p1
+
+    # Update winner's games won
+    winner.games_won += 1
+    winner.save()
+
+    # Check if winner has completed the target
+    if winner.games_won >= config.target_wins:
+        winner.has_finished = True
+        finishers = TableTennisPlayer.objects.filter(event=event, has_finished=True).count()
+        winner.finish_rank = finishers + 1
+        winner.points_awarded = config.get_points_for_rank(winner.finish_rank)
+        winner.save()
+
+    # Build new queue
+    queue = players.copy()
+    queue.remove(winner)
+    queue.remove(loser)
+
+    if not loser.has_finished:
+        queue.append(loser)
+
+    if not winner.has_finished:
+        queue.append(winner)
+
+    # Reassign queue positions
+    for i, player in enumerate(queue):
+        player.queue_position = i
+        player.save()
+
+    return redirect('table_tennis_game_view', event_id=event.id)

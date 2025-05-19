@@ -8,16 +8,22 @@
 <div class="mb-4">
     <h5 class="text-muted">Games in this event:</h5>
     <div class="d-flex flex-wrap gap-2">
-        {% for i in selected_games %}
-            {% if i == "mini_golf" %}
-                <a href="{% url 'my_golf_score_entry' event.code %}" class="btn btn-outline-primary btn-sm">
-                    {{ selected_game_names|index:forloop.counter0 }}
-                </a>
-            {% else %}
-                <a href="#" class="btn btn-outline-secondary btn-sm disabled">
-                    {{ selected_game_names|index:forloop.counter0 }}
-                </a>
-            {% endif %}
+        {% for game_code in selected_games %}
+            {% with game_name=selected_game_names|index:forloop.counter0 %}
+                {% if game_code == "mini_golf" %}
+                    <a href="{% url 'my_golf_score_entry' event.code %}" class="btn btn-outline-primary btn-sm">
+                        {{ game_name }}
+                    </a>
+                {% elif game_code == "table_tennis" %}
+                    <a href="{% url 'table_tennis_game_view' event.id %}" class="btn btn-outline-primary btn-sm">
+                        {{ game_name }}
+                    </a>
+                {% else %}
+                    <a href="#" class="btn btn-outline-secondary btn-sm disabled">
+                        {{ game_name }}
+                    </a>
+                {% endif %}
+            {% endwith %}
         {% endfor %}
     </div>
 </div>
@@ -28,21 +34,19 @@
         <tr>
             <th>Player</th>
             {% for name in event_names %}
-                <th>{{ name }}</th>  <!-- ✅ Correct -->
+                <th>{{ name }}</th>
             {% endfor %}
             <th>Total</th>
-            <th>Wins</th>
         </tr>
     </thead>
     <tbody>
         {% for row in leaderboard %}
             <tr>
                 <td>{{ row.username }}</td>
-                {% for name in event_names %}
-                    <td>{{ row.scores|dict_get:name }}</td>  <!-- ✅ Correct -->
+                {% for game in event_names %}
+                    <td>{{ row.scores|dict_get:game }}</td>
                 {% endfor %}
                 <td><strong>{{ row.total }}</strong></td>
-                <td>{{ row.wins }}</td>
             </tr>
         {% endfor %}
     </tbody>
