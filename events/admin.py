@@ -40,8 +40,16 @@ class PoolLeagueConfigAdmin(admin.ModelAdmin):
 
 @admin.register(TableTennisConfig)
 class TableTennisConfigAdmin(admin.ModelAdmin):
-    list_display = ("event", "matches_to_stay_on", "points_per_win", "bonus_for_win_streak", "max_winstreak_bonus")
-    search_fields = ("event__name",)
+    list_display = (
+        'event',
+        'target_wins',
+        'first_place_points',
+        'second_place_points',
+        'third_place_points',
+        'fourth_place_points',
+        'default_points',
+    )
+
 
 @admin.register(KillerConfig)
 class KillerConfigAdmin(admin.ModelAdmin):

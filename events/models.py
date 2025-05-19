@@ -34,7 +34,8 @@ class Event(models.Model):
 class MiniGolfGroup(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='golf_groups')
     players = models.ManyToManyField(Participant, related_name='golf_groups')
-    scorekeeper = models.ForeignKey(Participant, on_delete=models.SET_NULL, null=True, blank=True, related_name='kept_scores')
+    scorekeeper = models.ForeignKey(Participant, on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name="scorekept_groups")
     created_at = models.DateTimeField(auto_now_add=True)
 
 class MiniGolfScore(models.Model):
@@ -48,6 +49,7 @@ class MiniGolfScorecard(models.Model):
     group = models.OneToOneField('MiniGolfGroup', on_delete=models.CASCADE)
     data = models.JSONField(default=dict)  # e.g. { "player_id": { "1": 2, "2": 3, ... }, ... }
     last_updated = models.DateTimeField(auto_now=True)
+    submitted = models.BooleanField(default=False)  # ✅ add this line
 
     def __str__(self):
         return f"Scorecard for Group {self.group.id} – Event {self.group.event.name}"
@@ -78,13 +80,44 @@ class PoolLeagueConfig(models.Model):
 
 class TableTennisConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='table_tennis_config')
-    matches_to_stay_on = models.IntegerField(default=1)
-    points_per_win = models.IntegerField(default=10)
-    bonus_for_win_streak = models.IntegerField(default=0)
-    max_winstreak_bonus = models.IntegerField(default=0)
+    target_wins = models.PositiveIntegerField(default=7)  # e.g., first to 7 wins
+    first_place_points = models.PositiveIntegerField(default=50)
+    second_place_points = models.PositiveIntegerField(default=35)
+    third_place_points = models.PositiveIntegerField(default=25)
+    fourth_place_points = models.PositiveIntegerField(default=15)
+    default_points = models.PositiveIntegerField(default=5)  # everyone else who finishes
+
+    def get_points_for_rank(self, rank):
+        if rank == 1:
+            return self.first_place_points
+        elif rank == 2:
+            return self.second_place_points
+        elif rank == 3:
+            return self.third_place_points
+        elif rank == 4:
+            return self.fourth_place_points
+        return self.default_points
 
     def __str__(self):
         return f"Table Tennis Config for {self.event.name}"
+
+class TableTennisPlayer(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    games_won = models.PositiveIntegerField(default=0)
+    has_finished = models.BooleanField(default=False)
+    finish_rank = models.PositiveIntegerField(null=True, blank=True)  # 1st, 2nd, etc.
+    points_awarded = models.PositiveIntegerField(default=0)
+    queue_position = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['queue_position']
+
+    def __str__(self):
+        return f"{self.participant} (Wins: {self.games_won}, Queue: {self.queue_position})"
+
 
 class KillerConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='killer_config')
