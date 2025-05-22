@@ -153,15 +153,24 @@ def leaderboard(request, event_code):
         print(f"\n--- Participant: {username} ---")
         for code in event.selected_games:
             name = game_dict.get(code, code)
-            game_data = participant.kept_scores.get(code, {})
-            print(f"{code} ({name}) → {game_data}")
-
-            if isinstance(game_data, dict):
-                results[username][name] = game_data.get("points", 0)
-            elif isinstance(game_data, int):
-                results[username][name] = game_data
+            if code == "table_tennis":
+                try:
+                    tt_player = TableTennisPlayer.objects.get(event=event, participant=participant)
+                    points = tt_player.points_awarded
+                except TableTennisPlayer.DoesNotExist:
+                    points = 0
+                print(f"{code} ({name}) → [TableTennisPlayer] {points}")
+                results[username][name] = points
             else:
-                results[username][name] = 0
+                game_data = participant.kept_scores.get(code, {})
+                print(f"{code} ({name}) → {game_data}")
+
+                if isinstance(game_data, dict):
+                    results[username][name] = game_data.get("points", 0)
+                elif isinstance(game_data, int):
+                    results[username][name] = game_data
+                else:
+                    results[username][name] = 0
 
     print("\n=== RESULTS TABLE ===")
     pprint(dict(results))

@@ -8,6 +8,7 @@ from .models import (
     DartsConfig,
     MiniGolfScorecard,
     MiniGolfGroup,
+    TableTennisPlayer,
 )
 
 @admin.register(Event)
@@ -23,8 +24,14 @@ class MiniGolfConfigAdmin(admin.ModelAdmin):
 
 @admin.register(MiniGolfScorecard)
 class MiniGolfScorecardAdmin(admin.ModelAdmin):
-    list_display = ('group', 'last_updated')
+    list_display = ('group', 'last_updated', 'player_points')
     readonly_fields = ('last_updated',)
+
+    def player_points(self, obj):
+        scores = obj.group.scores.select_related('player')
+        return ", ".join(f"{score.player.username} ({score.points_awarded})" for score in scores)
+
+    player_points.short_description = "Players & Points"
 
 @admin.register(MiniGolfGroup)
 class MiniGolfGroupAdmin(admin.ModelAdmin):
@@ -50,6 +57,19 @@ class TableTennisConfigAdmin(admin.ModelAdmin):
         'default_points',
     )
 
+@admin.register(TableTennisPlayer)
+class TableTennisPlayerAdmin(admin.ModelAdmin):
+    list_display = (
+        'participant',
+        'event',
+        'games_won',
+        'has_finished',
+        'finish_rank',
+        'points_awarded',
+        'queue_position',
+    )
+    list_filter = ('event', 'has_finished')
+    ordering = ('event', 'queue_position')
 
 @admin.register(KillerConfig)
 class KillerConfigAdmin(admin.ModelAdmin):
