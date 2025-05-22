@@ -150,17 +150,35 @@ def submit_golf_scorecard(request, group_id):
 
 def table_tennis_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    players = TableTennisPlayer.objects.filter(event=event).order_by('queue_position')
     config = event.table_tennis_config
-    all_players = TableTennisPlayer.objects.filter(event=event).order_by('-games_won', 'queue_position')
+
+    # Only active players in the queue (exclude those who finished)
+    players = TableTennisPlayer.objects.filter(
+        event=event,
+        has_finished=False
+    ).order_by('queue_position')
+
+    # All players, including finished ones, for leaderboard
+    finished = TableTennisPlayer.objects.filter(
+        event=event,
+        has_finished=True
+    ).order_by('finish_rank')
+
+    active = TableTennisPlayer.objects.filter(
+        event=event,
+        has_finished=False
+    ).order_by('queue_position')
+
+    all_players = list(finished) + list(active)
 
     context = {
         'event': event,
-        'players': players,  # ordered queue (playing, next, waiting)
-        'all_players': all_players,  # for leaderboard
+        'players': players,  # used for current match-up and "up next"
+        'all_players': all_players,  # used for full leaderboard
         'config': config,
     }
     return render(request, 'events/table_tennis_game.html', context)
+
 
 
 def submit_table_tennis_result(request, event_id, winner_id):
@@ -171,15 +189,16 @@ def submit_table_tennis_result(request, event_id, winner_id):
     if len(players) < 2:
         return redirect('table_tennis_game_view', event_id=event.id)
 
+    # Identify the two players
     p1, p2 = players[0], players[1]
     winner = p1 if p1.id == winner_id else p2
     loser = p2 if winner == p1 else p1
 
-    # Update winner's games won
+    # Update winner's score
     winner.games_won += 1
     winner.save()
 
-    # Check if winner has completed the target
+    # If winner hits target, mark as finished
     if winner.games_won >= config.target_wins:
         winner.has_finished = True
         finishers = TableTennisPlayer.objects.filter(event=event, has_finished=True).count()
@@ -187,20 +206,29 @@ def submit_table_tennis_result(request, event_id, winner_id):
         winner.points_awarded = config.get_points_for_rank(winner.finish_rank)
         winner.save()
 
-    # Build new queue
-    queue = players.copy()
-    queue.remove(winner)
-    queue.remove(loser)
+    # Remove both players from the queue
+    players.remove(winner)
+    players.remove(loser)
 
-    if not loser.has_finished:
-        queue.append(loser)
+    # Rebuild queue:
+    new_queue = []
 
+    # 1. If winner is NOT finished, they go first
     if not winner.has_finished:
-        queue.append(winner)
+        new_queue.append(winner)
+
+    # 2. If there are any remaining players, they follow
+    for p in players:
+        new_queue.append(p)
+
+    # 3. Loser goes to the back if not finished
+    if not loser.has_finished:
+        new_queue.append(loser)
 
     # Reassign queue positions
-    for i, player in enumerate(queue):
+    for i, player in enumerate(new_queue):
         player.queue_position = i
         player.save()
 
     return redirect('table_tennis_game_view', event_id=event.id)
+
