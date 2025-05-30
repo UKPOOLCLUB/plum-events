@@ -3,6 +3,8 @@ from .models import (
     Event,
     MiniGolfConfig,
     PoolLeagueConfig,
+    PoolLeagueMatch,
+    PoolLeaguePlayer,
     TableTennisConfig,
     KillerConfig,
     DartsConfig,
@@ -44,6 +46,19 @@ class MiniGolfGroupAdmin(admin.ModelAdmin):
 class PoolLeagueConfigAdmin(admin.ModelAdmin):
     list_display = ("event", "matches_per_pair", "frames_per_match", "points_per_frame", "points_for_win")
     search_fields = ("event__name",)
+
+@admin.register(PoolLeagueMatch)
+class PoolLeagueMatchAdmin(admin.ModelAdmin):
+    list_display = ('event', 'player1', 'player2', 'winner', 'completed')
+    list_filter = ('event', 'completed')
+    search_fields = ('player1__participant__username', 'player2__participant__username')
+    ordering = ('event', 'completed', 'id')
+
+@admin.register(PoolLeaguePlayer)
+class PoolLeaguePlayerAdmin(admin.ModelAdmin):
+    list_display = ('event', 'participant', 'wins', 'points_awarded', 'has_finished')
+    list_filter = ('event',)
+    search_fields = ('participant__username',)
 
 @admin.register(TableTennisConfig)
 class TableTennisConfigAdmin(admin.ModelAdmin):

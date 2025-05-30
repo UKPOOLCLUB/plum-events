@@ -8,5 +8,7 @@ urlpatterns = [
     path('golf/submit-scorecard/<int:group_id>/', views.submit_golf_scorecard, name='submit_golf_scorecard'),
     path('table-tennis/<int:event_id>/', views.table_tennis_game_view, name='table_tennis_game_view'),
     path('table-tennis/<int:event_id>/submit/<int:winner_id>/', views.submit_table_tennis_result, name='submit_table_tennis_result'),
+    path('event/<int:event_id>/pool-league/matrix/', views.pool_league_matrix_view, name='pool_league_matrix'),
+    path('pool-league/submit-result/', views.submit_pool_match_result, name='submit_pool_match_result'),
 
 ]

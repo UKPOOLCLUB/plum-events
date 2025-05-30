@@ -70,13 +70,58 @@ class PoolLeagueConfig(models.Model):
     matches_per_pair = models.IntegerField(default=1)
     frames_per_match = models.IntegerField(default=3)
     points_per_frame = models.IntegerField(default=1)
+    points_first = models.IntegerField(default=50)
+    points_second = models.IntegerField(default=35)
+    points_third = models.IntegerField(default=25)
+    points_fourth = models.IntegerField(default=15)
+    points_fifth = models.IntegerField(default=10)
+    points_sixth = models.IntegerField(default=5)
     points_for_win = models.IntegerField(default=3)
     points_for_draw = models.IntegerField(default=1)
     points_for_loss = models.IntegerField(default=0)
-    bonus_for_clean_sweep = models.IntegerField(default=0)
+
+    def get_points_for_rank(self, rank):
+        if rank == 1:
+            return self.points_first
+        elif rank == 2:
+            return self.points_second
+        elif rank == 3:
+            return self.points_third
+        elif rank == 4:
+            return self.points_fourth
+        elif rank == 5:
+            return self.points_fifth
+        elif rank == 6:
+            return self.points_sixth
+        return 0  # No points for 7th or lower by default
 
     def __str__(self):
         return f"Pool League Config for {self.event.name}"
+
+class PoolLeaguePlayer(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='pool_league_players')
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    wins = models.PositiveIntegerField(default=0)
+    frames_won = models.PositiveIntegerField(default=0)  # optional, in case of tie-breaking
+    points_awarded = models.PositiveIntegerField(default=0)
+    finish_rank = models.PositiveIntegerField(null=True, blank=True)
+    has_finished = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.participant} in {self.event.name}"
+
+class PoolLeagueMatch(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='pool_league_matches')
+    player1 = models.ForeignKey(PoolLeaguePlayer, on_delete=models.CASCADE, related_name='as_player1')
+    player2 = models.ForeignKey(PoolLeaguePlayer, on_delete=models.CASCADE, related_name='as_player2')
+    winner = models.ForeignKey(PoolLeaguePlayer, on_delete=models.SET_NULL, null=True, blank=True, related_name='wins_as_winner')
+    score = models.CharField(max_length=20, blank=True)  # e.g. "1–0", "2–0", etc.
+    completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.player1} vs {self.player2}"
+
 
 class TableTennisConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='table_tennis_config')
