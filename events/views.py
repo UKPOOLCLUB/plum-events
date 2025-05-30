@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import MiniGolfGroup, MiniGolfScore, MiniGolfScorecard, MiniGolfConfig, TableTennisConfig, TableTennisPlayer
+from .models import PoolLeaguePlayer, PoolLeagueMatch
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from events.models import Event, Participant
@@ -231,4 +232,49 @@ def submit_table_tennis_result(request, event_id, winner_id):
         player.save()
 
     return redirect('table_tennis_game_view', event_id=event.id)
+
+
+def pool_league_matrix_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    players = PoolLeaguePlayer.objects.filter(event_id=event_id).select_related('participant')
+    matches = PoolLeagueMatch.objects.filter(event_id=event_id)
+
+    # Create a dict to fetch matches by player1-player2 ID combinations (in both orders)
+    match_dict = {}
+    for match in matches:
+        p1_id = match.player1_id
+        p2_id = match.player2_id
+        key = f"{min(p1_id, p2_id)}-{max(p1_id, p2_id)}"
+        match_dict[key] = match
+
+    context = {
+        "event": event,
+        "players": players,
+        "matches": match_dict,
+    }
+    return render(request, "events/pool_league_matrix.html", context)
+
+
+@require_POST
+def submit_pool_match_result(request):
+    match_id = request.POST.get('match_id')
+    winner_id = request.POST.get('winner_id')
+
+    try:
+        match = PoolLeagueMatch.objects.get(id=match_id)
+        winner = PoolLeaguePlayer.objects.get(id=winner_id)
+    except PoolLeagueMatch.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Match not found'})
+    except PoolLeaguePlayer.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Winner not found'})
+
+    match.winner = winner
+    match.completed = True
+    match.save()
+
+    # Update win count
+    winner.wins += 1
+    winner.save()
+
+    return JsonResponse({'success': True})
 

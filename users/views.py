@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from collections import defaultdict
 from pprint import pprint
 from events.utils import generate_golf_groups
-from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, DartsConfig, TableTennisPlayer, TableTennisConfig
+from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer, DartsConfig, TableTennisPlayer, TableTennisConfig
 from django.db.models import Sum, Count
 from random import shuffle
 
@@ -100,6 +100,39 @@ def start_event(request, event_code):
                 )
                 group.players.set(group_players)
                 group.save()
+
+        # ✅ Pool League Setup
+        if "pool_league" in event.selected_games:
+            PoolLeagueConfig.objects.get_or_create(event=event, defaults={
+                'matches_per_pair': 1,
+                'frames_per_match': 1,
+                'points_per_frame': 1,
+                'points_first': 50,
+                'points_second': 35,
+                'points_third': 25,
+                'points_fourth': 15,
+                'points_fifth': 10,
+                'points_sixth': 5,
+                'points_for_win': 1,
+                'points_for_draw': 0,
+                'points_for_loss': 0,
+            })
+
+            participants = list(event.participants.all())
+            players = []
+            for participant in participants:
+                player = PoolLeaguePlayer.objects.create(event=event, participant=participant)
+                players.append(player)
+
+            # Generate round-robin matches
+            from itertools import combinations
+            for p1, p2 in combinations(players, 2):
+                PoolLeagueMatch.objects.create(
+                    event=event,
+                    player1=p1,
+                    player2=p2,
+                    completed=False
+                )
 
         # ✅ Table Tennis Setup
         if "table_tennis" in event.selected_games:

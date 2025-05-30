@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load pool_match_filters %}
+
+{% block content %}
+
+<h2 class="text-center mb-4">Pool League Match Grid</h2>
+
+<!-- Return to Leaderboard -->
+<div class="mb-4">
+    <a href="{% url 'live_leaderboard' event.code %}" class="btn btn-secondary">
+        ← Return to Leaderboard
+    </a>
+</div>
+
+<table class="table table-bordered text-center align-middle">
+    <thead>
+        <tr>
+            <th>Player</th>
+            {% for col_player in players %}
+                <th>{{ col_player.participant.username }}</th>
+            {% endfor %}
+            <th>Total Wins</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row_player in players %}
+            <tr>
+                <th>{{ row_player.participant.username }}</th>
+                {% for col_player in players %}
+                    {% if row_player == col_player %}
+                        <td class="bg-light">—</td>
+                    {% else %}
+                        {% with key=row_player.id|match_key:col_player.id %}
+                            {% with match=matches|get_match:key %}
+                                {% if match %}
+                                    {% if match.completed %}
+                                        {% if match.winner_id == row_player.id %}
+                                            <td class="text-success">✅</td>
+                                        {% else %}
+                                            <td class="text-danger">❌</td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td class="clickable-result-cell bg-warning text-dark"
+                                            data-match-id="{{ match.id }}"
+                                            data-player1="{{ match.player1.participant.username }}"
+                                            data-player1-id="{{ match.player1.id }}"
+                                            data-player2="{{ match.player2.participant.username }}"
+                                            data-player2-id="{{ match.player2.id }}">
+                                            Select
+                                        </td>
+                                    {% endif %}
+                                {% else %}
+                                    <td></td>
+                                {% endif %}
+                            {% endwith %}
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+                <td><strong>{{ row_player.wins }}</strong></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<!-- Result Submission Modal -->
+<div class="modal fade" id="submitResultModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Submit Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p id="matchup" class="mb-3"></p>
+                <button class="btn btn-success m-2" id="btn-player1-win"></button>
+                <button class="btn btn-primary m-2" id="btn-player2-win"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.clickable-result-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+        const matchId = cell.dataset.matchId;
+        const p1 = cell.dataset.player1;
+        const p2 = cell.dataset.player2;
+        const p1Id = cell.dataset.player1Id;
+        const p2Id = cell.dataset.player2Id;
+
+        document.getElementById('matchup').textContent = `${p1} vs ${p2}`;
+        const btn1 = document.getElementById('btn-player1-win');
+        const btn2 = document.getElementById('btn-player2-win');
+
+        btn1.textContent = `${p1} wins`;
+        btn2.textContent = `${p2} wins`;
+
+        btn1.onclick = () => submitResult(matchId, p1Id);
+        btn2.onclick = () => submitResult(matchId, p2Id);
+
+        new bootstrap.Modal(document.getElementById('submitResultModal')).show();
+    });
+});
+
+function submitResult(matchId, winnerId) {
+    fetch("{% url 'submit_pool_match_result' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `match_id=${matchId}&winner_id=${winnerId}`
+    }).then(res => res.json()).then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || "Error submitting result");
+        }
+    });
+}
+</script>
+
+{% endblock %}

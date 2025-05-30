@@ -18,6 +18,10 @@
                     <a href="{% url 'table_tennis_game_view' event.id %}" class="btn btn-outline-primary btn-sm">
                         {{ game_name }}
                     </a>
+                {% elif game_code == "pool_league" %}
+                    <a href="{% url 'pool_league_matrix' event.id %}" class="btn btn-outline-primary btn-sm">
+                        {{ game_name }}
+                    </a>
                 {% else %}
                     <a href="#" class="btn btn-outline-secondary btn-sm disabled">
                         {{ game_name }}
