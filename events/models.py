@@ -49,7 +49,7 @@ class MiniGolfScorecard(models.Model):
     group = models.OneToOneField('MiniGolfGroup', on_delete=models.CASCADE)
     data = models.JSONField(default=dict)  # e.g. { "player_id": { "1": 2, "2": 3, ... }, ... }
     last_updated = models.DateTimeField(auto_now=True)
-    submitted = models.BooleanField(default=False)  # ✅ add this line
+    submitted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Scorecard for Group {self.group.id} – Event {self.group.event.name}"
@@ -108,7 +108,10 @@ class PoolLeaguePlayer(models.Model):
     has_finished = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.participant} in {self.event.name}"
+        return f"{self.participant}"
+
+    class Meta:
+        ordering = ['participant__username']
 
 class PoolLeagueMatch(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='pool_league_matches')

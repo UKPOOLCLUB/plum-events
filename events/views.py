@@ -247,10 +247,18 @@ def pool_league_matrix_view(request, event_id):
         key = f"{min(p1_id, p2_id)}-{max(p1_id, p2_id)}"
         match_dict[key] = match
 
+    league_completed = is_pool_league_complete(event)
+
+    standings = []
+    if league_completed:
+        standings = PoolLeaguePlayer.objects.filter(event=event).select_related('participant').order_by('finish_rank')
+
     context = {
         "event": event,
         "players": players,
         "matches": match_dict,
+        "league_completed": league_completed,
+        "standings": standings,
     }
     return render(request, "events/pool_league_matrix.html", context)
 
@@ -276,5 +284,36 @@ def submit_pool_match_result(request):
     winner.wins += 1
     winner.save()
 
+    if is_pool_league_complete(match.event):
+        finalize_pool_league(match.event)
+
     return JsonResponse({'success': True})
+
+def is_pool_league_complete(event):
+    return not PoolLeagueMatch.objects.filter(event=event, completed=False).exists()
+
+
+def finalize_pool_league(event):
+    if not is_pool_league_complete(event):
+        return False  # Can't finalize if not complete
+
+    players = list(PoolLeaguePlayer.objects.filter(event=event))
+
+    # ✅ Guard: if all players are already finalized, skip
+    if all(p.has_finished for p in players):
+        return False  # Already finalized
+
+    config = event.pool_league_config
+
+    # Sort players by wins, then by username as tiebreak
+    players.sort(key=lambda p: (-p.wins, p.participant.username.lower()))
+
+    for rank, player in enumerate(players, start=1):
+        points = config.get_points_for_rank(rank)
+        player.points_awarded = points
+        player.finish_rank = rank
+        player.has_finished = True
+        player.save()
+
+    return True
 

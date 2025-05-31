@@ -5,7 +5,7 @@ from .models import MiniGolfGroup
 from users.models import Participant
 
 
-def generate_golf_groups(event, max_group_size=4, min_group_size=3):
+def generate_golf_groups(event, max_group_size=5, min_group_size=3):
     # Fetch and shuffle all participants for this event
     player_list = list(Participant.objects.filter(event=event))
     shuffle(player_list)

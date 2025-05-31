@@ -194,6 +194,16 @@ def leaderboard(request, event_code):
                     points = 0
                 print(f"{code} ({name}) → [TableTennisPlayer] {points}")
                 results[username][name] = points
+
+            elif code == "pool_league":
+                try:
+                    pl_player = PoolLeaguePlayer.objects.get(event=event, participant=participant)
+                    points = pl_player.points_awarded
+                except PoolLeaguePlayer.DoesNotExist:
+                    points = 0
+                print(f"{code} ({name}) → [PoolLeaguePlayer] {points}")
+                results[username][name] = points
+
             else:
                 game_data = participant.kept_scores.get(code, {})
                 print(f"{code} ({name}) → {game_data}")
