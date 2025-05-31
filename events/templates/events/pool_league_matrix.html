@@ -62,6 +62,34 @@
     </tbody>
 </table>
 
+{% if league_completed %}
+    <div class="alert alert-success text-center mt-5">
+        <h4 class="mb-3">🏆 Pool League Completed!</h4>
+        <p>Here are the final standings:</p>
+
+        <table class="table table-bordered text-center mt-4">
+            <thead class="table-dark">
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Wins</th>
+                    <th>Points Awarded</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in standings %}
+                    <tr>
+                        <td>{{ player.finish_rank }}</td>
+                        <td>{{ player.participant.username }}</td>
+                        <td>{{ player.wins }}</td>
+                        <td>{{ player.points_awarded }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
 
 <!-- Result Submission Modal -->
 <div class="modal fade" id="submitResultModal" tabindex="-1">
