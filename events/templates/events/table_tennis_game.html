@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2 class="text-center mb-4">Table Tennis – Winner Stays On</h2>
 
-<div class="mb-4 text-center">
-    <p><strong>Target Wins:</strong> {{ config.target_wins }}</p>
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <div>
+        <h2 class="mb-0">Table Tennis</h2>
+        <p class="text-muted mb-0"><strong>Winner Stays On<br>Target Wins:</strong> {{ config.target_wins }}</p>
+    </div>
+        <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
+            <i class="bi bi-bar-chart-fill fs-1"></i>
+        </a>
+
 </div>
 
 {% if players|length >= 2 %}
@@ -73,9 +79,5 @@
         {% endfor %}
     </tbody>
 </table>
-
-<div class="text-center mt-4">
-    <a href="{% url 'live_leaderboard' event.code %}" class="btn btn-secondary">Back to Leaderboard</a>
-</div>
 
 {% endblock %}
