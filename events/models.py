@@ -9,6 +9,7 @@ GAME_CHOICES = [
     ("killer_pool", "Killer Pool"),
     ("six_red", "6 Red Shoot Out"),
     ("darts_golf", "Darts Golf"),
+    ("e-darts", "E-Darts"),
     ("darts_league", "Darts League"),
     ("round_the_clock", "Round the Clock"),
     ("mini_golf", "Mini-Golf"),
