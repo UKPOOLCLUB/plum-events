@@ -1,28 +1,30 @@
-import random
 import math
 from random import shuffle
-from .models import MiniGolfGroup
-from users.models import Participant
 
+def create_balanced_groups(participants, max_group_size=5, min_group_size=3):
+    """
+    Splits a list of participants into balanced groups.
+    Returns a list of lists of participants.
+    """
+    if not participants:
+        return []
 
-def generate_golf_groups(event, max_group_size=5, min_group_size=3):
-    # Fetch and shuffle all participants for this event
-    player_list = list(Participant.objects.filter(event=event))
-    shuffle(player_list)
-    total = len(player_list)
+    participants = list(participants)
+    shuffle(participants)
+    total = len(participants)
 
     group_count = math.ceil(total / max_group_size)
-    base_group_size = total // group_count
+    base_size = total // group_count
     remainder = total % group_count
+
+    if base_size < min_group_size:
+        raise ValueError("Cannot split players into valid groups")
 
     groups = []
     index = 0
     for i in range(group_count):
-        size = base_group_size + (1 if i < remainder else 0)
-        if size < min_group_size:
-            raise ValueError("Cannot split players into valid groups")
-        group = player_list[index:index+size]
-        groups.append(group)
+        size = base_size + (1 if i < remainder else 0)
+        groups.append(participants[index:index + size])
         index += size
 
     return groups

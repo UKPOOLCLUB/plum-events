@@ -35,9 +35,10 @@ class Event(models.Model):
 class MiniGolfGroup(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='golf_groups')
     players = models.ManyToManyField(Participant, related_name='golf_groups')
-    scorekeeper = models.ForeignKey(Participant, on_delete=models.SET_NULL, null=True, blank=True,
-                                    related_name="scorekept_groups")
+    scorekeeper = models.ForeignKey(Participant, on_delete=models.SET_NULL, null=True, blank=True, related_name="scorekept_groups")
+    group_number = models.PositiveIntegerField()  # ✅ ADD THIS LINE
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class MiniGolfScore(models.Model):
     group = models.ForeignKey(MiniGolfGroup, on_delete=models.CASCADE, related_name='scores')
@@ -177,11 +178,44 @@ class KillerConfig(models.Model):
     def __str__(self):
         return (f"Killer Config for {self.event.name}")
 
-class DartsConfig(models.Model):
-    event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='darts_golf_config')
+class EDartsConfig(models.Model):
+    event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='darts_config')
     points_first = models.IntegerField(default=50)
-    points_second = models.IntegerField(default=25)
-    points_third = models.IntegerField(default=10)
+    points_second = models.IntegerField(default=35)
+    points_third = models.IntegerField(default=25)
+    points_fourth = models.IntegerField(default=15)
+    points_fifth = models.IntegerField(default=10)
 
     def __str__(self):
         return f"Darts Config for {self.event.name}"
+
+    def get_points_for_position(self, position):
+        return {
+            1: self.points_first,
+            2: self.points_second,
+            3: self.points_third,
+            4: self.points_fourth,
+            5: self.points_fifth
+        }.get(position, 0)
+
+class EDartsGroup(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='darts_groups')
+    group_number = models.PositiveIntegerField()
+    participants = models.ManyToManyField(Participant)
+
+    def __str__(self):
+        return f"E-Darts Group {self.group_number} – {self.event.name}"
+
+class EDartsResult(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='darts_results')
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    finishing_position = models.PositiveIntegerField()
+    points_awarded = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('event', 'participant')
+        ordering = ['finishing_position']
+
+    def __str__(self):
+        return f"{self.participant.user.username} – Position {self.finishing_position} – {self.event.name}"
+

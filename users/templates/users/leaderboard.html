@@ -22,6 +22,10 @@
                     <a href="{% url 'pool_league_matrix' event.id %}" class="btn btn-outline-primary btn-sm">
                         {{ game_name }}
                     </a>
+                {% elif game_code == "e_darts" %}
+                    <a href="{% url 'enter_edarts_results' event.id %}" class="btn btn-outline-primary btn-sm">
+                        {{ game_name }}
+                    </a>
                 {% else %}
                     <a href="#" class="btn btn-outline-secondary btn-sm disabled">
                         {{ game_name }}

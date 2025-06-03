@@ -7,7 +7,9 @@ from .models import (
     PoolLeaguePlayer,
     TableTennisConfig,
     KillerConfig,
-    DartsConfig,
+    EDartsConfig,
+    EDartsGroup,
+    EDartsResult,
     MiniGolfScorecard,
     MiniGolfGroup,
     TableTennisPlayer,
@@ -91,7 +93,19 @@ class KillerConfigAdmin(admin.ModelAdmin):
     list_display = ("event", "lives_per_player", "points_per_survivor", "bonus_black_pot")
     search_fields = ("event__name",)
 
-@admin.register(DartsConfig)
-class DartsConfigAdmin(admin.ModelAdmin):
-    list_display = ("event", "points_first", "points_second", "points_third")
+
+@admin.register(EDartsConfig)
+class EDartsConfigAdmin(admin.ModelAdmin):
+    list_display = ("event", "points_first", "points_second", "points_third", "points_fourth", "points_fifth")
     search_fields = ("event__name",)
+
+@admin.register(EDartsGroup)
+class EDartsGroupAdmin(admin.ModelAdmin):
+    list_display = ("event", "group_number")
+    filter_horizontal = ("participants",)
+
+@admin.register(EDartsResult)
+class EDartsResultAdmin(admin.ModelAdmin):
+    list_display = ("event", "participant", "finishing_position", "points_awarded")
+    list_filter = ("event",)
+    search_fields = ("participant__user__username", "event__name")

@@ -10,5 +10,6 @@ urlpatterns = [
     path('table-tennis/<int:event_id>/submit/<int:winner_id>/', views.submit_table_tennis_result, name='submit_table_tennis_result'),
     path('event/<int:event_id>/pool-league/matrix/', views.pool_league_matrix_view, name='pool_league_matrix'),
     path('pool-league/submit-result/', views.submit_pool_match_result, name='submit_pool_match_result'),
+    path('event/<int:event_id>/e-darts/', views.enter_edarts_results, name='enter_edarts_results'),
 
 ]

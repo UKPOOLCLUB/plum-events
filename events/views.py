@@ -4,7 +4,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import MiniGolfGroup, MiniGolfScore, MiniGolfScorecard, MiniGolfConfig, TableTennisConfig, TableTennisPlayer
-from .models import PoolLeaguePlayer, PoolLeagueMatch
+from .models import PoolLeaguePlayer, PoolLeagueMatch, EDartsGroup, EDartsConfig, EDartsResult
+from .utils import create_balanced_groups
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from events.models import Event, Participant
@@ -77,6 +78,22 @@ def save_golf_score(request):
 
     return JsonResponse({"success": False, "error": "Invalid request"})
 
+def generate_golf_groups(event):
+    # Get all participants
+    players = Participant.objects.filter(event=event)
+
+    # Clear any existing groups for this event
+    MiniGolfGroup.objects.filter(event=event).delete()
+
+    # Create balanced groups
+    grouped_players = create_balanced_groups(players)
+
+    # Save each group to DB
+    for i, group_players in enumerate(grouped_players, start=1):
+        group = MiniGolfGroup.objects.create(event=event, group_number=i)
+        group.players.set(group_players)
+
+    return MiniGolfGroup.objects.filter(event=event)
 
 def redirect_to_golf_group(request, event_code):
     event = get_object_or_404(Event, code__iexact=event_code)
@@ -317,3 +334,63 @@ def finalize_pool_league(event):
 
     return True
 
+
+def generate_darts_groups(event):
+
+    players = Participant.objects.filter(event=event)
+    EDartsGroup.objects.filter(event=event).delete()
+
+    groups = create_balanced_groups(players)
+
+    for i, group_players in enumerate(groups, start=1):
+        group = EDartsGroup.objects.create(event=event, group_number=i)
+        group.participants.set(group_players)
+
+    return EDartsGroup.objects.filter(event=event)
+
+
+def enter_edarts_results(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    groups = EDartsGroup.objects.filter(event=event)
+    config = event.darts_config
+    participant_id = request.session.get('participant_id')
+
+    # Optional: limit access to participants or admin
+    if not participant_id:
+        messages.error(request, "You must join the event first.")
+        return redirect('enter_event_code')
+
+    participant = get_object_or_404(Participant, id=participant_id, event=event)
+
+    if request.method == 'POST':
+        for group in groups:
+            for player in group.participants.all():
+                key = f"position_{group.id}_{player.id}"
+                position = int(request.POST.get(key, 0))
+                points = config.get_points_for_position(position)
+
+                EDartsResult.objects.update_or_create(
+                    event=event,
+                    participant=player,
+                    defaults={
+                        'finishing_position': position,
+                        'points_awarded': points
+                    }
+                )
+
+                # 🧠 Store in participant.kept_scores (like mini_golf)
+                if not player.kept_scores:
+                    player.kept_scores = {}
+
+                player.kept_scores["e_darts"] = {
+                    "points": points,
+                    "position": position
+                }
+                player.save()
+
+        return redirect('live_leaderboard', event_code=event.code)
+
+    return render(request, 'events/enter_edarts_results.html', {
+        'event': event,
+        'groups': groups
+    })
