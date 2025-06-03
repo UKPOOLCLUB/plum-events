@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
 from pprint import pprint
-from events.utils import generate_golf_groups
-from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer, DartsConfig, TableTennisPlayer, TableTennisConfig
+from events.utils import create_balanced_groups
+from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
 from django.db.models import Sum, Count
 from random import shuffle
 
@@ -89,17 +89,40 @@ def start_event(request, event_code):
         event.has_started = True
         event.save()
 
+        participants = list(event.participants.all())
+
+        # ✅ Shared Group Generation (for golf/darts)
+        group_list = []
+        if "mini_golf" in event.selected_games or "e_darts" in event.selected_games:
+            group_list = create_balanced_groups(participants)
+
         # ✅ Mini Golf Setup
         if "mini_golf" in event.selected_games:
             MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 9})
-            groups = generate_golf_groups(event)
-            for group_players in groups:
+            MiniGolfGroup.objects.filter(event=event).delete()
+
+            for i, group_players in enumerate(group_list, start=1):
                 group = MiniGolfGroup.objects.create(
                     event=event,
+                    group_number=i,
                     scorekeeper=group_players[0]
                 )
                 group.players.set(group_players)
-                group.save()
+
+        # ✅ E-Darts Setup
+        if "e_darts" in event.selected_games:
+            EDartsConfig.objects.get_or_create(event=event, defaults={
+                "points_first": 50,
+                "points_second": 35,
+                "points_third": 25,
+                "points_fourth": 15,
+                "points_fifth": 10,
+            })
+            EDartsGroup.objects.filter(event=event).delete()
+
+            for i, group_players in enumerate(group_list, start=1):
+                group = EDartsGroup.objects.create(event=event, group_number=i)
+                group.participants.set(group_players)
 
         # ✅ Pool League Setup
         if "pool_league" in event.selected_games:
@@ -118,13 +141,11 @@ def start_event(request, event_code):
                 'points_for_loss': 0,
             })
 
-            participants = list(event.participants.all())
-            players = []
-            for participant in participants:
-                player = PoolLeaguePlayer.objects.create(event=event, participant=participant)
-                players.append(player)
+            players = [
+                PoolLeaguePlayer.objects.create(event=event, participant=p)
+                for p in participants
+            ]
 
-            # Generate round-robin matches
             from itertools import combinations
             for p1, p2 in combinations(players, 2):
                 PoolLeagueMatch.objects.create(
@@ -136,7 +157,6 @@ def start_event(request, event_code):
 
         # ✅ Table Tennis Setup
         if "table_tennis" in event.selected_games:
-            # Create default config if not already set
             TableTennisConfig.objects.get_or_create(event=event, defaults={
                 'target_wins': 7,
                 'first_place_points': 50,
@@ -146,9 +166,7 @@ def start_event(request, event_code):
                 'default_points': 5,
             })
 
-            participants = list(event.participants.all())
             shuffle(participants)
-
             for idx, participant in enumerate(participants):
                 TableTennisPlayer.objects.create(
                     event=event,

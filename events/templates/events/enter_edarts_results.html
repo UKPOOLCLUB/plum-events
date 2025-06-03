@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <div>
+        <h2 class="mb-0">E-Darts Results</h2>
+    </div>
+    <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
+        <i class="bi bi-bar-chart-fill fs-1"></i>
+    </a>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% for group in groups %}
+        <div class="card mb-4 p-3">
+            <h4>Group {{ group.group_number }}</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Finishing Position</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in group.participants.all %}
+                        <tr>
+                            <td>{{ player.username }}</td>
+                            <td>
+                                <input type="number" name="position_{{ group.id }}_{{ player.id }}" min="1" max="5" class="form-control" required>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary w-100">Submit Results</button>
+</form>
+{% endblock %}
