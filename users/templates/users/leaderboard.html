@@ -26,6 +26,10 @@
                     <a href="{% url 'enter_edarts_results' event.id %}" class="btn btn-outline-primary btn-sm">
                         {{ game_name }}
                     </a>
+                {% elif game_code == "killer_pool" %}
+                    <a href="{% url 'killer_game' event.id %}" class="btn btn-outline-primary btn-sm">
+                        {{ game_name }}
+                    </a>
                 {% else %}
                     <a href="#" class="btn btn-outline-secondary btn-sm disabled">
                         {{ game_name }}

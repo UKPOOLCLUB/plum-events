@@ -9,7 +9,7 @@ GAME_CHOICES = [
     ("killer_pool", "Killer Pool"),
     ("six_red", "6 Red Shoot Out"),
     ("darts_golf", "Darts Golf"),
-    ("e-darts", "E-Darts"),
+    ("e_darts", "E-Darts"),
     ("darts_league", "Darts League"),
     ("round_the_clock", "Round the Clock"),
     ("mini_golf", "Mini-Golf"),
@@ -131,25 +131,29 @@ class PoolLeagueMatch(models.Model):
 class TableTennisConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='table_tennis_config')
     target_wins = models.PositiveIntegerField(default=7)  # e.g., first to 7 wins
-    first_place_points = models.PositiveIntegerField(default=50)
-    second_place_points = models.PositiveIntegerField(default=35)
-    third_place_points = models.PositiveIntegerField(default=25)
-    fourth_place_points = models.PositiveIntegerField(default=15)
-    default_points = models.PositiveIntegerField(default=5)  # everyone else who finishes
+    points_first = models.IntegerField(default=50)
+    points_second = models.IntegerField(default=35)
+    points_third = models.IntegerField(default=25)
+    points_fourth = models.IntegerField(default=15)
+    points_fifth = models.IntegerField(default=10)
+    points_sixth = models.IntegerField(default=5)
 
     def get_points_for_rank(self, rank):
-        if rank == 1:
-            return self.first_place_points
-        elif rank == 2:
-            return self.second_place_points
-        elif rank == 3:
-            return self.third_place_points
-        elif rank == 4:
-            return self.fourth_place_points
-        return self.default_points
+        points_by_rank = [
+            self.points_first,
+            self.points_second,
+            self.points_third,
+            self.points_fourth,
+            self.points_fifth,
+            self.points_sixth,
+        ]
+        if 1 <= rank <= len(points_by_rank):
+            return points_by_rank[rank - 1]
+        return 0  # Default for ranks beyond 6
 
     def __str__(self):
         return f"Table Tennis Config for {self.event.name}"
+
 
 class TableTennisPlayer(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
@@ -170,13 +174,90 @@ class TableTennisPlayer(models.Model):
 
 
 class KillerConfig(models.Model):
-    event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='killer_config')
-    lives_per_player = models.IntegerField(default=3)
-    points_per_survivor = models.IntegerField(default=50)
-    bonus_black_pot = models.BooleanField(default=True)
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name='killer_config')
+    points_first = models.IntegerField(default=50)
+    points_second = models.IntegerField(default=35)
+    points_third = models.IntegerField(default=25)
+    points_fourth = models.IntegerField(default=15)
+    points_fifth = models.IntegerField(default=10)
+    points_sixth = models.IntegerField(default=5)
+
+    def get_points_for_rank(self, rank):
+        points_by_rank = [
+            self.points_first,
+            self.points_second,
+            self.points_third,
+            self.points_fourth,
+            self.points_fifth,
+            self.points_sixth,
+        ]
+        return points_by_rank[rank - 1] if 1 <= rank <= len(points_by_rank) else 0
 
     def __str__(self):
-        return (f"Killer Config for {self.event.name}")
+        return f"Killer Config for {self.event.name}"
+
+
+class Killer(models.Model):
+    event = models.OneToOneField(Event, on_delete=models.CASCADE)
+    current_player_index = models.IntegerField(default=0)
+    repeat_shot_pending = models.BooleanField(default=False)
+    repeat_shot_forced = models.BooleanField(default=False)
+    previous_player = models.ForeignKey(
+        'KillerPlayer',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='was_previous'
+    )
+    is_complete = models.BooleanField(default=False)  # ✅ NEW FIELD
+
+    def get_current_player(self):
+        players = list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
+        if not players:
+            return None
+        index = self.current_player_index % len(players)
+        return players[index]
+
+    def advance_turn(self):
+        players = list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
+        if not players:
+            return
+        self.current_player_index = (self.current_player_index + 1) % len(players)
+        self.save()
+
+    def check_game_complete(self):
+        active = self.killerplayer_set.filter(eliminated=False)
+        if active.count() == 1:
+            winner = active.first()
+            self.is_complete = True
+            self.save()
+
+            # assign first place + points
+            from .models import KillerConfig
+            config = self.event.killer_config
+            winner.finish_position = 1
+            winner.points_awarded = config.get_points_for_rank(1)
+            winner.save()
+
+            p = winner.participant
+            if not p.kept_scores:
+                p.kept_scores = {}
+
+            p.kept_scores["killer_pool"] = {
+                "points": winner.points_awarded,
+                "position": 1,
+            }
+            p.save()
+
+
+class KillerPlayer(models.Model):
+    killer_game = models.ForeignKey(Killer, on_delete=models.CASCADE)
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    lives = models.IntegerField(default=3)
+    turn_order = models.IntegerField()
+    eliminated = models.BooleanField(default=False)
+    finish_position = models.PositiveIntegerField(null=True, blank=True)
+    points_awarded = models.PositiveIntegerField(null=True, blank=True)
 
 class EDartsConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='darts_config')
@@ -217,5 +298,5 @@ class EDartsResult(models.Model):
         ordering = ['finishing_position']
 
     def __str__(self):
-        return f"{self.participant.user.username} – Position {self.finishing_position} – {self.event.name}"
+        return f"{self.participant.username} – Position {self.finishing_position} – {self.event.name}"
 

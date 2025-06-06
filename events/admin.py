@@ -7,6 +7,8 @@ from .models import (
     PoolLeaguePlayer,
     TableTennisConfig,
     KillerConfig,
+    Killer,
+    KillerPlayer,
     EDartsConfig,
     EDartsGroup,
     EDartsResult,
@@ -64,15 +66,9 @@ class PoolLeaguePlayerAdmin(admin.ModelAdmin):
 
 @admin.register(TableTennisConfig)
 class TableTennisConfigAdmin(admin.ModelAdmin):
-    list_display = (
-        'event',
-        'target_wins',
-        'first_place_points',
-        'second_place_points',
-        'third_place_points',
-        'fourth_place_points',
-        'default_points',
-    )
+    list_display = ("event", "target_wins", "points_first", "points_second", "points_third", "points_fourth", "points_fifth",
+                    "points_sixth")
+
 
 @admin.register(TableTennisPlayer)
 class TableTennisPlayerAdmin(admin.ModelAdmin):
@@ -90,8 +86,34 @@ class TableTennisPlayerAdmin(admin.ModelAdmin):
 
 @admin.register(KillerConfig)
 class KillerConfigAdmin(admin.ModelAdmin):
-    list_display = ("event", "lives_per_player", "points_per_survivor", "bonus_black_pot")
+    list_display = ("event", "points_first", "points_second", "points_third", "points_fourth", "points_fifth", "points_sixth")
     search_fields = ("event__name",)
+
+@admin.register(KillerPlayer)
+class KillerPlayerAdmin(admin.ModelAdmin):
+    list_display = (
+        'participant',
+        'killer_game',
+        'lives',
+        'eliminated',
+        'turn_order',
+    )
+    list_filter = ('killer_game__event', 'eliminated')
+    ordering = ('killer_game__event', 'turn_order')
+    search_fields = ('participant__username', 'killer_game__event__name')
+
+@admin.register(Killer)
+class KillerAdmin(admin.ModelAdmin):
+    list_display = (
+        'event',
+        'current_player_index',
+        'repeat_shot_pending',
+        'repeat_shot_forced',
+        'previous_player',
+    )
+    search_fields = ('event__name',)
+    list_filter = ('event',)
+    ordering = ('event__name',)
 
 
 @admin.register(EDartsConfig)
@@ -108,4 +130,4 @@ class EDartsGroupAdmin(admin.ModelAdmin):
 class EDartsResultAdmin(admin.ModelAdmin):
     list_display = ("event", "participant", "finishing_position", "points_awarded")
     list_filter = ("event",)
-    search_fields = ("participant__user__username", "event__name")
+    search_fields = ("participant__username", "event__name")
