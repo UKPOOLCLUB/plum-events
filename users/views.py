@@ -7,6 +7,7 @@ from collections import defaultdict
 from pprint import pprint
 from events.utils import create_balanced_groups
 from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
+from events.models import Killer, KillerPlayer
 from django.db.models import Sum, Count
 from random import shuffle
 
@@ -155,15 +156,39 @@ def start_event(request, event_code):
                     completed=False
                 )
 
+        # ✅ Killer Setup
+        if "killer_pool" in event.selected_games:
+            KillerConfig.objects.get_or_create(event=event, defaults={
+                'points_first': 50,
+                'points_second': 35,
+                'points_third': 25,
+                'points_fourth': 15,
+                'points_fifth': 10,
+                'points_sixth': 5,
+            })
+
+            Killer.objects.filter(event=event).delete()
+            killer = Killer.objects.create(event=event)
+
+            shuffle(participants)
+            for idx, participant in enumerate(participants):
+                KillerPlayer.objects.create(
+                    killer_game=killer,
+                    participant=participant,
+                    turn_order=idx,
+                    lives=getattr(event, 'killer_starting_lives', 3)
+                )
+
         # ✅ Table Tennis Setup
         if "table_tennis" in event.selected_games:
             TableTennisConfig.objects.get_or_create(event=event, defaults={
                 'target_wins': 7,
-                'first_place_points': 50,
-                'second_place_points': 35,
-                'third_place_points': 25,
-                'fourth_place_points': 15,
-                'default_points': 5,
+                'points_first': 50,
+                'points_second': 35,
+                'points_third': 25,
+                'points_fourth': 15,
+                'points_fifth': 10,
+                'points_sixth': 5,
             })
 
             shuffle(participants)

@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import MiniGolfGroup, MiniGolfScore, MiniGolfScorecard, MiniGolfConfig, TableTennisConfig, TableTennisPlayer
 from .models import PoolLeaguePlayer, PoolLeagueMatch, EDartsGroup, EDartsConfig, EDartsResult
+from .models import Killer, KillerPlayer
 from .utils import create_balanced_groups
 from django.contrib import messages
 from django.http import HttpResponseForbidden
@@ -394,3 +395,121 @@ def enter_edarts_results(request, event_id):
         'event': event,
         'groups': groups
     })
+
+
+def killer_game_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    killer = get_object_or_404(Killer, event=event)
+    players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
+
+    current_player = killer.get_current_player()
+    context = {
+        'event': event,
+        'killer': killer,
+        'players': players,
+        'current_player': current_player,
+        'previous_player': killer.previous_player,
+        'repeat_shot_pending': killer.repeat_shot_pending,
+        'repeat_shot_forced': killer.repeat_shot_forced,
+    }
+    return render(request, 'events/killer_game.html', context)
+
+@require_POST
+def killer_submit_turn(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    killer = get_object_or_404(Killer, event=event)
+    players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
+    current_player = killer.get_current_player()
+
+    action = request.POST.get('action')
+
+    if action == 'successful_pot':
+        killer.previous_player = current_player
+        killer.repeat_shot_pending = False
+        killer.repeat_shot_forced = False
+        killer.advance_turn()
+
+    elif action == 'lose_one_life':
+        current_player.lives -= 1
+        if current_player.lives <= 0:
+            current_player.eliminated = True
+            current_player.save()
+            handle_killer_elimination(killer, current_player)
+            killer.check_game_complete()
+        else:
+            current_player.save()
+
+        killer.previous_player = current_player
+        killer.advance_turn()
+
+
+    elif action == 'lose_two_lives':
+        current_player.lives -= 2
+        if current_player.lives <= 0:
+            current_player.eliminated = True
+            current_player.save()
+            handle_killer_elimination(killer, current_player)
+            killer.check_game_complete()
+        else:
+            current_player.save()
+
+        killer.previous_player = current_player
+        killer.advance_turn()
+
+    elif action == 'add_life':
+        current_player.lives += 1
+        current_player.save()
+        killer.previous_player = current_player
+        killer.advance_turn()
+
+    elif action == 'repeat_previous':
+        killer.repeat_shot_pending = True
+        killer.repeat_shot_forced = True
+        killer.current_player_index = (killer.current_player_index - 1) % players.count()
+
+    killer.save()
+    return redirect('killer_game', event_id=event.id)
+
+def handle_killer_elimination(killer, player):
+    total_players = KillerPlayer.objects.filter(killer_game=killer).count()
+    eliminated_count = KillerPlayer.objects.filter(killer_game=killer, eliminated=True).count()
+
+    # Position is from the bottom up (e.g. 8th place = first eliminated in 8-player game)
+    finish_position = total_players - eliminated_count + 1
+
+    player.finish_position = finish_position
+    player.points_awarded = killer.event.killer_config.get_points_for_rank(finish_position)
+    player.save()
+
+    # Update participant's kept_scores
+    participant = player.participant
+    if not participant.kept_scores:
+        participant.kept_scores = {}
+
+    participant.kept_scores["killer_pool"] = {
+        "points": player.points_awarded,
+        "position": finish_position,
+    }
+    participant.save()
+
+    # Check if only one player remains
+    alive_players = KillerPlayer.objects.filter(killer_game=killer, eliminated=False)
+    if alive_players.count() == 1:
+        killer.is_complete = True
+        killer.save()
+
+        winner = alive_players.first()
+        winner.finish_position = 1
+        winner.points_awarded = killer.event.killer_config.get_points_for_rank(1)
+        winner.save()
+
+        wp = winner.participant
+        if not wp.kept_scores:
+            wp.kept_scores = {}
+
+        wp.kept_scores["killer_pool"] = {
+            "points": winner.points_awarded,
+            "position": 1,
+        }
+        wp.save()
+

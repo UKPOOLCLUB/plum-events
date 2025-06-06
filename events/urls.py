@@ -11,5 +11,7 @@ urlpatterns = [
     path('event/<int:event_id>/pool-league/matrix/', views.pool_league_matrix_view, name='pool_league_matrix'),
     path('pool-league/submit-result/', views.submit_pool_match_result, name='submit_pool_match_result'),
     path('event/<int:event_id>/e-darts/', views.enter_edarts_results, name='enter_edarts_results'),
+    path('killer/<int:event_id>/', views.killer_game_view, name='killer_game'),
+    path('killer/<int:event_id>/submit/', views.killer_submit_turn, name='killer_submit_turn'),
 
 ]
