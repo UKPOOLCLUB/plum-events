@@ -1,0 +1,108 @@
+
+body,
+body.plum-theme {
+  background-color: #121212;
+  color: #f0f0f0;
+  font-family: 'Rubik', sans-serif;
+}
+
+h2, h3, h4 {
+  color: #00FFAB;
+  text-shadow: 1px 1px #000;
+}
+
+.card {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid #00BFFF;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 0 12px #00BFFF33;
+}
+
+.btn {
+  border-radius: 2rem;
+  transition: 0.3s ease;
+  font-weight: bold;
+}
+
+.btn-success {
+  background-color: #00FFAB;
+  border: none;
+  color: #000;
+}
+
+.btn-success:hover {
+  background-color: #00e69a;
+  box-shadow: 0 0 10px #00FFAB88;
+}
+
+.table {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #f0f0f0;
+}
+
+input.form-control {
+  background-color: #1E1E2F;
+  border: 1px solid #00BFFF;
+  color: white;
+}
+
+.alert {
+  border-radius: 1rem;
+  font-weight: bold;
+}
+
+.alert-primary {
+  background-color: #00BFFF22;
+  border-color: #00BFFF;
+  color: #00BFFF;
+}
+
+.alert-success {
+  background-color: #00FFAB22;
+  border-color: #00FFAB;
+  color: #00FFAB;
+}
+.neon-heading {
+  color: #00FFAB;
+  text-shadow: 0 0 5px #00FFAB, 0 0 10px #00FFAB55, 0 0 20px #00FFAB33;
+  font-size: 2rem;
+}
+
+input.form-control::placeholder {
+  color: #aaaaaa;
+  opacity: 0.7;
+}
+
+.btn-success {
+  background-color: #00FFAB;
+  border: none;
+  color: #000;
+  box-shadow: 0 0 8px #00FFAB88;
+}
+
+.btn-success:hover {
+  background-color: #00e699;
+  box-shadow: 0 0 12px #00FFAB;
+}
+
+.alert-danger {
+  background-color: #ff4e4e22;
+  border: 1px solid #ff4e4e;
+  color: #ff4e4e;
+}
+.text-accent {
+  color: #00FFAB;
+}
+
+.border-accent {
+  border: 1px solid #00FFAB;
+}
+
+.blink {
+  animation: blink 1.2s step-start infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.6; }
+}

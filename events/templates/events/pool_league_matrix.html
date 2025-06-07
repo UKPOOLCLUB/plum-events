@@ -3,6 +3,10 @@
 
 {% block content %}
 
+<script>
+  document.body.dataset.pollingUrl = "{% url 'pool_league_state' event.id %}";
+</script>
+
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
     <div>
         <h2 class="mb-0">Pool League Match Grid</h2>

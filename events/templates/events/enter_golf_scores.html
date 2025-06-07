@@ -3,6 +3,11 @@
 
 {% block content %}
 
+<script>
+  document.body.dataset.pollingUrl = "{% url 'golf_scorecard_state' scorecard.group.id %}";
+</script>
+
+
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
     <div>
         <h2 class="mb-0">Mini-Golf Scorecard</h2>

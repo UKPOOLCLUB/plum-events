@@ -2,6 +2,11 @@
 {% load custom_filters %}
 
 {% block content %}
+
+<script>
+  document.body.dataset.pollingUrl = "{% url 'leaderboard_state' event.id %}";
+</script>
+
 <h2 class="mb-4 text-center">Leaderboard – {{ event.name }}</h2>
 
 <!-- Game Navigation -->

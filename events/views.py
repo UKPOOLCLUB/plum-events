@@ -166,6 +166,12 @@ def submit_golf_scorecard(request, group_id):
 
     return redirect('live_leaderboard', event_code=group.event.code)
 
+def golf_scorecard_state(request, group_id):
+    scorecard = get_object_or_404(MiniGolfScorecard, group_id=group_id)
+    return JsonResponse({
+        'submitted': scorecard.submitted,
+        'last_updated': scorecard.updated_at.isoformat()
+    })
 
 def table_tennis_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
@@ -251,6 +257,15 @@ def submit_table_tennis_result(request, event_id, winner_id):
 
     return redirect('table_tennis_game_view', event_id=event.id)
 
+def table_tennis_state(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    players = TableTennisPlayer.objects.filter(event=event).order_by('finishing_position', 'order')
+
+    return JsonResponse({
+        'player_order': [p.participant.username for p in players],
+        'finished_count': players.filter(finishing_position__isnull=False).count()
+    })
+
 
 def pool_league_matrix_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
@@ -335,6 +350,18 @@ def finalize_pool_league(event):
 
     return True
 
+def pool_league_state(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    players = PoolLeaguePlayer.objects.filter(event=event).select_related('participant')
+
+    league_state = sorted(
+        [(p.participant.username, p.points_awarded or 0) for p in players],
+        key=lambda x: (-x[1], x[0].lower())
+    )
+
+    return JsonResponse({
+        "league_state": league_state
+    })
 
 def generate_darts_groups(event):
 
@@ -513,3 +540,14 @@ def handle_killer_elimination(killer, player):
         }
         wp.save()
 
+def killer_game_state(request, event_id):
+    killer = get_object_or_404(Killer, event_id=event_id)
+    current_player = killer.get_current_player()
+    is_complete = killer.is_complete
+    winner = killer.get_winner()
+
+    return JsonResponse({
+        'current_player': current_player.participant.username if current_player else None,
+        'is_complete': is_complete,
+        'winner': winner.participant.username if winner else None,
+    })
