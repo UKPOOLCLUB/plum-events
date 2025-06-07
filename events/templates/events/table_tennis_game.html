@@ -1,6 +1,9 @@
 {% extends "base.html" %}
-
 {% block content %}
+
+<script>
+  document.body.dataset.pollingUrl = "{% url 'table_tennis_state' event.id %}";
+</script>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
     <div>

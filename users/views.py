@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from events.models import Event, GAME_CHOICES
 from .models import Participant
 from django.contrib.auth.decorators import user_passes_test
@@ -35,11 +36,13 @@ def enter_username(request, event_code):
     error = None
 
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = request.POST.get('username', '').strip()
 
         if not username:
             error = "Please enter a username."
-        elif Participant.objects.filter(username=username, event=event).exists():
+        elif ' ' in username or len(username) > 12:
+            error = "Username must be max 12 characters with no spaces."
+        elif Participant.objects.filter(username__iexact=username, event=event).exists():
             error = "That username is already taken for this event."
         else:
             participant = Participant.objects.create(username=username, event=event)
@@ -72,6 +75,11 @@ def waiting_room(request, event_code):
         'participants': participants
     })
 
+def event_state(request, event_code):
+    event = get_object_or_404(Event, code__iexact=event_code)
+    return JsonResponse({
+        'has_started': event.has_started
+    })
 
 @user_passes_test(lambda u: u.is_superuser)
 def host_dashboard(request):
@@ -292,4 +300,48 @@ def leaderboard(request, event_code):
         "active_game": selected_game_names[0] if selected_game_names else None,
         "selected_games": event.selected_games,
         "selected_game_names": selected_game_names,
+    })
+
+def leaderboard_state(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    participants = event.participants.all()
+    game_dict = dict(GAME_CHOICES)
+    selected_game_names = [game_dict.get(code, code) for code in event.selected_games]
+
+    results = defaultdict(lambda: {name: 0 for name in selected_game_names})
+
+    for participant in participants:
+        username = participant.username
+        for code in event.selected_games:
+            name = game_dict.get(code, code)
+            if code == "table_tennis":
+                try:
+                    points = TableTennisPlayer.objects.get(event=event, participant=participant).points_awarded
+                except TableTennisPlayer.DoesNotExist:
+                    points = 0
+                results[username][name] = points
+
+            elif code == "pool_league":
+                try:
+                    points = PoolLeaguePlayer.objects.get(event=event, participant=participant).points_awarded
+                except PoolLeaguePlayer.DoesNotExist:
+                    points = 0
+                results[username][name] = points
+
+            else:
+                game_data = participant.kept_scores.get(code, {})
+                if isinstance(game_data, dict):
+                    results[username][name] = game_data.get("points", 0)
+                elif isinstance(game_data, int):
+                    results[username][name] = game_data
+                else:
+                    results[username][name] = 0
+
+    leaderboard_state = sorted(
+        [(username, sum(scores.values())) for username, scores in results.items()],
+        key=lambda x: (-x[1], x[0].lower())
+    )
+
+    return JsonResponse({
+        "leaderboard_state": leaderboard_state
     })
