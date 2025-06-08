@@ -5,7 +5,11 @@ DEBUG = False
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
-ALLOWED_HOSTS = ['plumevents.com', 'www.plumevents.com', 'plum-events.onrender.com']
+ALLOWED_HOSTS = [
+    'plum-events.onrender.com',  # ✅ this must match your actual Render subdomain
+    'www.plumevents.com',        # optional, for when you add a custom domain
+    'plumevents.com',
+]
 
 DATABASES = {
     'default': dj_database_url.config(conn_max_age=600)
