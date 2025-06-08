@@ -38,20 +38,42 @@
   <div class="row gx-2 gy-3">
 
     <!-- Action Buttons -->
-    {% if not killer.is_complete %}
-        <div class="col-12 col-md-6">
-          <form method="post" action="{% url 'killer_submit_turn' event.id %}">
-            {% csrf_token %}
-                <div class="killer-action-grid">
-                  <button name="action" value="successful_pot" class="killer-action-btn" title="Successful Pot">✅</button>
-                  <button name="action" value="lose_one_life" class="killer-action-btn" title="Lose 1 Life">❌</button>
-                  <button name="action" value="lose_two_lives" class="killer-action-btn" title="Lose 2 Lives">❌❌</button>
-                  <button name="action" value="add_life" class="killer-action-btn" title="Add Life (Black)">🎱➕</button>
-                  <button name="action" value="repeat_previous" class="killer-action-btn" title="Force Repeat">🔁</button>
-                </div>
-          </form>
+{% if not killer.is_complete %}
+  <div class="col-12 col-md-6">
+    <form method="post" action="{% url 'killer_submit_turn' event.id %}">
+      {% csrf_token %}
+      <div class="killer-action-grid text-center">
+
+        <div>
+          <button name="action" value="successful_pot" class="killer-action-btn" title="Successful Pot">✅</button>
+          <div class="small mt-1">Pot</div>
         </div>
-        {% endif %}
+
+        <div>
+          <button name="action" value="lose_one_life" class="killer-action-btn" title="Lose 1 Life">❌</button>
+          <div class="small mt-1">Lose 1</div>
+        </div>
+
+        <div>
+          <button name="action" value="lose_two_lives" class="killer-action-btn" title="Lose 2 Lives">❌❌</button>
+          <div class="small mt-1">Lose 2</div>
+        </div>
+
+        <div>
+          <button name="action" value="add_life" class="killer-action-btn" title="Add Life (Black)">🎱➕</button>
+          <div class="small mt-1">Black ➕</div>
+        </div>
+
+        <div>
+          <button name="action" value="repeat_previous" class="killer-action-btn" title="Force Repeat">🔁</button>
+          <div class="small mt-1">Force Prev</div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+{% endif %}
+
 
     <!-- Player List -->
     <div class="col-12 col-md-6">
