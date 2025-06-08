@@ -9,7 +9,6 @@
 
 <div class="container text-center">
   <h2 class="mb-3 neon-heading">🏆 Leaderboard</h2>
-  <h5 class="text-muted mb-4">for <strong>{{ event.name }}</strong></h5>
 
   <!-- Game Navigation -->
   <div class="mb-4">
@@ -51,14 +50,31 @@
   <div class="table-responsive">
     <table class="table table-dark table-bordered align-middle">
         <thead>
-            <tr>
-                <th>Player</th>
-                {% for name in event_names %}
-                    <th>{{ name }}</th>
-                {% endfor %}
-                <th>Total</th>
-            </tr>
+          <tr>
+            <th>Player</th>
+            {% for code in selected_games %}
+              <th>
+                <span title="{% with name=selected_game_names|index:forloop.counter0 %}{{ name }}{% endwith %}">
+                  {% if code == "mini_golf" %}
+                    ⛳️
+                  {% elif code == "table_tennis" %}
+                    🏓
+                  {% elif code == "pool_league" %}
+                    🎱
+                  {% elif code == "e_darts" %}
+                    🎯
+                  {% elif code == "killer_pool" %}
+                    💀🎱
+                  {% else %}
+                    ❓
+                  {% endif %}
+                </span>
+              </th>
+            {% endfor %}
+            <th>Total</th>
+          </tr>
         </thead>
+
         <tbody>
             {% for row in leaderboard %}
                 <tr>
