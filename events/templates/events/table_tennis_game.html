@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <script>
   document.body.dataset.pollingUrl = "{% url 'table_tennis_state' event.id %}";
 </script>
@@ -22,7 +24,7 @@
       <!-- Player 1 -->
       <div class="text-center">
         <h4 class="text-white fw-bold mb-2">{{ players.0.participant.username }}</h4>
-        <form method="post" action="{% url 'submit_table_tennis_result' event.id players.0.id %}">
+        <form class="win-button-form" method="post" action="{% url 'submit_table_tennis_result' event.id players.0.id %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-success">🏆 Wins</button>
         </form>
@@ -34,7 +36,7 @@
       <!-- Player 2 -->
       <div class="text-center">
         <h4 class="text-white fw-bold mb-2">{{ players.1.participant.username }}</h4>
-        <form method="post" action="{% url 'submit_table_tennis_result' event.id players.1.id %}">
+        <form class="win-button-form" method="post" action="{% url 'submit_table_tennis_result' event.id players.1.id %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-success">🏆 Wins</button>
         </form>
@@ -91,4 +93,25 @@
 </div>
 
 {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form.win-button-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.4 }
+      });
+
+      setTimeout(() => {
+        form.submit();
+      }, 500);
+    });
+  });
+});
+</script>
+
 {% endblock %}
