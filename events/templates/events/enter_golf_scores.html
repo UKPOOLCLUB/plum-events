@@ -3,10 +3,11 @@
 
 {% block content %}
 
+{% if group.id %}
 <script>
-  document.body.dataset.pollingUrl = "{% url 'golf_scorecard_state' scorecard.group.id %}";
+  document.body.dataset.pollingUrl = "{% url 'golf_scorecard_state' group.id %}";
 </script>
-
+{% endif %}
 
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
     <div>
