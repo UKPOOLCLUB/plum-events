@@ -12,7 +12,7 @@
 
   <!-- Game Navigation -->
   <div class="mb-4">
-      <h6 class="text-accent">Games in this event:</h6>
+      <h6 class="text-accent">Choose :</h6>
       <div class="d-flex flex-wrap justify-content-center gap-2">
           {% for game_code in selected_games %}
               {% with game_name=selected_game_names|index:forloop.counter0 %}
