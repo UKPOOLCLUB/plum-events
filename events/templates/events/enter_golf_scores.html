@@ -10,79 +10,102 @@
 {% endif %}
 
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-    <div>
-        <h2 class="mb-0">Mini-Golf Scorecard</h2>
-        <p class="text-muted mb-0">Scorekeeper: <strong>{{ scorekeeper.username }}</strong></p>
-    </div>
-    <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
-        <i class="bi bi-bar-chart-fill fs-1"></i>
-    </a>
+  <div>
+    <h2 class="mb-0">Mini-Golf Scorecard</h2>
+    <p class="text-muted mb-0">Scorekeeper: <strong>{{ scorekeeper.username }}</strong></p>
+  </div>
+  <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
+    <i class="bi bi-bar-chart-fill fs-1"></i>
+  </a>
 </div>
 
 {% if can_edit and not scorecard.submitted %}
 <form method="post" action="{% url 'submit_golf_scorecard' group.id %}">
-    {% csrf_token %}
+  {% csrf_token %}
 {% endif %}
 
+<!-- Front 9 Table -->
+<h5 class="text-center mt-4">Front 9</h5>
+<table class="table table-bordered text-center align-middle mb-4">
+  <thead class="table-light">
+    <tr>
+      <th>Player</th>
+      {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in players %}
+    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+      <td>{{ player.username }}</td>
+      {% for hole in holes|slice:":9" %}
+        <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
+      {% endfor %}
+      <td id="front9_{{ player.username }}"><strong>0</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Back 9 Table -->
+<h5 class="text-center">Back 9</h5>
 <table class="table table-bordered text-center align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>Player</th>
-            {% if holes|length == 18 %}
-                {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
-                <th>Front 9</th>
-                {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
-                <th>Back 9</th>
-            {% else %}
-                {% for hole in holes %}<th>{{ hole }}</th>{% endfor %}
-            {% endif %}
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for player in players %}
-        <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
-            <td>{{ player.username }}</td>
+  <thead class="table-light">
+    <tr>
+      <th>Player</th>
+      {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
+      <th>Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in players %}
+    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+      <td>{{ player.username }}</td>
+      {% for hole in holes|slice:"9:" %}
+        <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
+      {% endfor %}
+      <td id="back9_{{ player.username }}"><strong>0</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-            {% if holes|length == 18 %}
-                {% for hole in holes|slice:":9" %}
-                    <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
-                {% endfor %}
-                <td id="front9_{{ player.username }}"><strong>0</strong></td>
-                {% for hole in holes|slice:"9:" %}
-                    <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
-                {% endfor %}
-                <td id="back9_{{ player.username }}"><strong>0</strong></td>
-            {% else %}
-                {% for hole in holes %}
-                    <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
-                {% endfor %}
-            {% endif %}
-
-            <td id="total_{{ player.username }}"><strong>0</strong></td>
-        </tr>
-        {% endfor %}
-    </tbody>
+<!-- Totals Row -->
+<h5 class="text-center">Total Score</h5>
+<table class="table table-bordered text-center align-middle">
+  <thead class="table-light">
+    <tr>
+      <th>Player</th>
+      <th>Total Strokes</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in players %}
+    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+      <td>{{ player.username }}</td>
+      <td id="total_{{ player.username }}"><strong>0</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 
 {% if can_edit and not scorecard.submitted %}
-    <div class="text-center">
-        <button type="submit" class="btn btn-primary mt-3">Submit Final Scorecard</button>
-    </div>
+  <div class="text-center">
+    <button type="submit" class="btn btn-primary mt-3">Submit Final Scorecard</button>
+  </div>
 </form>
 {% elif scorecard.submitted %}
-    <p class="text-center mt-3 text-success fw-bold">✅ Scorecard Submitted</p>
+  <p class="text-center mt-3 text-success fw-bold">✅ Scorecard Submitted</p>
 {% endif %}
 
 <style>
-/* Remove number input spinners for all browsers */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 input[type=number] {
-    -moz-appearance: textfield; /* Firefox */
+    -moz-appearance: textfield;
     text-align: center;
     padding: 4px;
     font-weight: bold;
@@ -117,13 +140,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         for (const [username, totals] of Object.entries(playerScores)) {
-            const frontCell = document.getElementById(`front9_${username}`);
-            const backCell = document.getElementById(`back9_${username}`);
-            const totalCell = document.getElementById(`total_${username}`);
-
-            if (frontCell) frontCell.innerHTML = `<strong>${totals.front9}</strong>`;
-            if (backCell) backCell.innerHTML = `<strong>${totals.back9}</strong>`;
-            if (totalCell) totalCell.innerHTML = `<strong>${totals.total}</strong>`;
+            document.getElementById(`front9_${username}`).innerHTML = `<strong>${totals.front9}</strong>`;
+            document.getElementById(`back9_${username}`).innerHTML = `<strong>${totals.back9}</strong>`;
+            document.getElementById(`total_${username}`).innerHTML = `<strong>${totals.total}</strong>`;
         }
     }
 
@@ -131,20 +150,8 @@ document.addEventListener('DOMContentLoaded', function () {
         input.addEventListener('input', updateTotals);
     });
 
-    // Trigger on page load
     updateTotals();
 });
-
-const scorecardSubmitted = {{ scorecard.submitted|yesno:"true,false" }};
-
-if (!scorecardSubmitted) {
-    inputs.forEach(input => {
-        input.addEventListener('input', () => {
-            // existing AJAX save logic
-        });
-    });
-}
-
 </script>
 
 {% endblock %}
