@@ -502,19 +502,29 @@ def enter_edarts_results(request, event_id):
         'groups': groups
     })
 
-
-
 def killer_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     killer = get_object_or_404(Killer, event=event)
     players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
 
     current_player = killer.get_current_player()
+
+    # ✅ Get next player (skipping eliminated)
+    next_player = None
+    if current_player:
+        current_index = list(players).index(current_player)
+        for offset in range(1, len(players)):
+            candidate = players[(current_index + offset) % len(players)]
+            if not candidate.eliminated:
+                next_player = candidate
+                break
+
     context = {
         'event': event,
         'killer': killer,
         'players': players,
         'current_player': current_player,
+        'next_player': next_player,
         'previous_player': killer.previous_player,
         'repeat_shot_pending': killer.repeat_shot_pending,
         'repeat_shot_forced': killer.repeat_shot_forced,
