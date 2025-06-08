@@ -3,21 +3,102 @@
 
 {% block content %}
 
+<style>
+  .league-header {
+    color: #00FFAB;
+    text-shadow: 0 0 6px #00FFAB;
+  }
+
+  .matrix-table th,
+  .matrix-table td {
+    vertical-align: middle;
+  }
+
+  .matrix-table .text-success,
+  .matrix-table .text-danger {
+    font-size: 1.2rem;
+  }
+
+  .clickable-result-cell {
+    cursor: pointer;
+    border: 2px dashed #FFD700;
+    background-color: #222;
+    transition: background-color 0.2s ease;
+  }
+
+  .clickable-result-cell:hover {
+    background-color: #333;
+  }
+
+  .matrix-table th:first-child,
+  .matrix-table td:first-child {
+    font-weight: bold;
+    color: #00FFAB;
+    white-space: nowrap;
+  }
+
+  .matrix-table td:last-child {
+    background-color: rgba(0, 255, 171, 0.05);
+    font-weight: bold;
+  }
+
+  .modal-content {
+    background-color: #1E1E2F;
+    border: 1px solid #00FFAB;
+    color: #fff;
+  }
+
+  .modal-title {
+    color: #00FFAB;
+  }
+
+  .btn-close {
+    filter: invert(1);
+  }
+</style>
+
 <script>
   document.body.dataset.pollingUrl = "{% url 'pool_league_state' event.id %}";
 </script>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
     <div>
-        <h2 class="mb-0">Pool League Match Grid</h2>
+        <h2 class="mb-0 league-header">🎱 Pool League Match Grid</h2>
     </div>
     <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
         <i class="bi bi-bar-chart-fill fs-1"></i>
     </a>
 </div>
 
+{% if league_completed %}
+    <div class="alert alert-success text-center mt-5">
+        <h4 class="mb-3">🏆 Pool League Completed!</h4>
+        <p>Here are the final standings:</p>
 
-<table class="table table-bordered text-center align-middle">
+        <table class="table table-dark table-bordered text-center mt-4 matrix-table">
+            <thead class="table-dark">
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Wins</th>
+                    <th>Points Awarded</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in standings %}
+                    <tr>
+                        <td>{{ player.finish_rank }}</td>
+                        <td>{{ player.participant.username }}</td>
+                        <td>{{ player.wins }}</td>
+                        <td>{{ player.points_awarded }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<table class="table table-dark table-bordered text-center align-middle matrix-table">
     <thead>
         <tr>
             <th>Player</th>
@@ -67,33 +148,7 @@
     </tbody>
 </table>
 
-{% if league_completed %}
-    <div class="alert alert-success text-center mt-5">
-        <h4 class="mb-3">🏆 Pool League Completed!</h4>
-        <p>Here are the final standings:</p>
 
-        <table class="table table-bordered text-center mt-4">
-            <thead class="table-dark">
-                <tr>
-                    <th>Rank</th>
-                    <th>Player</th>
-                    <th>Wins</th>
-                    <th>Points Awarded</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for player in standings %}
-                    <tr>
-                        <td>{{ player.finish_rank }}</td>
-                        <td>{{ player.participant.username }}</td>
-                        <td>{{ player.wins }}</td>
-                        <td>{{ player.points_awarded }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% endif %}
 
 
 <!-- Result Submission Modal -->

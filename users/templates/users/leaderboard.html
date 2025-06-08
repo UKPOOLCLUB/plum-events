@@ -7,65 +7,71 @@
   document.body.dataset.pollingUrl = "{% url 'leaderboard_state' event.id %}";
 </script>
 
-<h2 class="mb-4 text-center">Leaderboard – {{ event.name }}</h2>
+<div class="container text-center">
+  <h2 class="mb-3 neon-heading">🏆 Leaderboard</h2>
+  <h5 class="text-muted mb-4">for <strong>{{ event.name }}</strong></h5>
 
-<!-- Game Navigation -->
-<div class="mb-4">
-    <h5 class="text-muted">Games in this event:</h5>
-    <div class="d-flex flex-wrap gap-2">
-        {% for game_code in selected_games %}
-            {% with game_name=selected_game_names|index:forloop.counter0 %}
-                {% if game_code == "mini_golf" %}
-                    <a href="{% url 'my_golf_score_entry' event.code %}" class="btn btn-outline-primary btn-sm">
-                        {{ game_name }}
-                    </a>
-                {% elif game_code == "table_tennis" %}
-                    <a href="{% url 'table_tennis_game_view' event.id %}" class="btn btn-outline-primary btn-sm">
-                        {{ game_name }}
-                    </a>
-                {% elif game_code == "pool_league" %}
-                    <a href="{% url 'pool_league_matrix' event.id %}" class="btn btn-outline-primary btn-sm">
-                        {{ game_name }}
-                    </a>
-                {% elif game_code == "e_darts" %}
-                    <a href="{% url 'enter_edarts_results' event.id %}" class="btn btn-outline-primary btn-sm">
-                        {{ game_name }}
-                    </a>
-                {% elif game_code == "killer_pool" %}
-                    <a href="{% url 'killer_game' event.id %}" class="btn btn-outline-primary btn-sm">
-                        {{ game_name }}
-                    </a>
-                {% else %}
-                    <a href="#" class="btn btn-outline-secondary btn-sm disabled">
-                        {{ game_name }}
-                    </a>
-                {% endif %}
-            {% endwith %}
-        {% endfor %}
-    </div>
+  <!-- Game Navigation -->
+  <div class="mb-4">
+      <h6 class="text-accent">Games in this event:</h6>
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+          {% for game_code in selected_games %}
+              {% with game_name=selected_game_names|index:forloop.counter0 %}
+                  {% if game_code == "mini_golf" %}
+                      <a href="{% url 'my_golf_score_entry' event.code %}" class="btn btn-outline-light btn-sm">
+                          {{ game_name }}
+                      </a>
+                  {% elif game_code == "table_tennis" %}
+                      <a href="{% url 'table_tennis_game_view' event.id %}" class="btn btn-outline-light btn-sm">
+                          {{ game_name }}
+                      </a>
+                  {% elif game_code == "pool_league" %}
+                      <a href="{% url 'pool_league_matrix' event.id %}" class="btn btn-outline-light btn-sm">
+                          {{ game_name }}
+                      </a>
+                  {% elif game_code == "e_darts" %}
+                      <a href="{% url 'enter_edarts_results' event.id %}" class="btn btn-outline-light btn-sm">
+                          {{ game_name }}
+                      </a>
+                  {% elif game_code == "killer_pool" %}
+                      <a href="{% url 'killer_game' event.id %}" class="btn btn-outline-light btn-sm">
+                          {{ game_name }}
+                      </a>
+                  {% else %}
+                      <a href="#" class="btn btn-outline-secondary btn-sm disabled">
+                          {{ game_name }}
+                      </a>
+                  {% endif %}
+              {% endwith %}
+          {% endfor %}
+      </div>
+  </div>
+
+  <!-- Leaderboard Table -->
+  <div class="table-responsive">
+    <table class="table table-dark table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Player</th>
+                {% for name in event_names %}
+                    <th>{{ name }}</th>
+                {% endfor %}
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in leaderboard %}
+                <tr>
+                    <td class="fw-bold">{{ row.username }}</td>
+                    {% for game in event_names %}
+                        <td>{{ row.scores|dict_get:game }}</td>
+                    {% endfor %}
+                    <td><strong class="text-accent">{{ row.total }}</strong></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- Leaderboard Table -->
-<table class="table table-striped table-bordered text-center">
-    <thead class="table-dark">
-        <tr>
-            <th>Player</th>
-            {% for name in event_names %}
-                <th>{{ name }}</th>
-            {% endfor %}
-            <th>Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in leaderboard %}
-            <tr>
-                <td>{{ row.username }}</td>
-                {% for game in event_names %}
-                    <td>{{ row.scores|dict_get:game }}</td>
-                {% endfor %}
-                <td><strong>{{ row.total }}</strong></td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}

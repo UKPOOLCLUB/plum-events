@@ -28,6 +28,8 @@ class Event(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     has_started = models.BooleanField(default=False)
 
+    edarts_completed = models.BooleanField(default=False)
+
     def __str__(self):
         return f"{self.name} ({self.code})"
 
@@ -81,6 +83,13 @@ class PoolLeagueConfig(models.Model):
     points_for_win = models.IntegerField(default=3)
     points_for_draw = models.IntegerField(default=1)
     points_for_loss = models.IntegerField(default=0)
+
+    def get_points_for_rank_range(self, start_rank, count):
+        """Return average points across `count` ranks starting from `start_rank`."""
+        total = 0
+        for i in range(start_rank, start_rank + count):
+            total += self.get_points_for_rank(i)
+        return total / count if count > 0 else 0
 
     def get_points_for_rank(self, rank):
         if rank == 1:

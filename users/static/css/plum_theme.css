@@ -106,3 +106,16 @@ input.form-control::placeholder {
 @keyframes blink {
   50% { opacity: 0.6; }
 }
+
+.table th,
+.table td {
+  vertical-align: middle;
+}
+
+input[type="number"].form-control {
+  max-width: 80px;
+  margin: 0 auto;
+  background-color: #1E1E2F;
+  color: #fff;
+  border: 1px solid #00FFAB;
+}

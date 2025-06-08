@@ -10,6 +10,8 @@ from .utils import create_balanced_groups
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from events.models import Event, Participant
+from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 
 def enter_golf_scores(request, group_id):
     group = get_object_or_404(MiniGolfGroup, id=group_id)
@@ -328,23 +330,71 @@ def is_pool_league_complete(event):
 
 def finalize_pool_league(event):
     if not is_pool_league_complete(event):
-        return False  # Can't finalize if not complete
+        return False
 
     players = list(PoolLeaguePlayer.objects.filter(event=event))
 
-    # ✅ Guard: if all players are already finalized, skip
     if all(p.has_finished for p in players):
-        return False  # Already finalized
+        return False
 
     config = event.pool_league_config
 
-    # Sort players by wins, then by username as tiebreak
-    players.sort(key=lambda p: (-p.wins, p.participant.username.lower()))
+    # Group players by number of wins
+    wins_groups = defaultdict(list)
+    for p in players:
+        wins_groups[p.wins].append(p)
 
-    for rank, player in enumerate(players, start=1):
-        points = config.get_points_for_rank(rank)
-        player.points_awarded = points
+    sorted_win_totals = sorted(wins_groups.keys(), reverse=True)
+
+    current_rank = 1
+    ranked_players = []
+
+    for wins in sorted_win_totals:
+        group = wins_groups[wins]
+
+        if len(group) == 1:
+            ranked_players.append((group[0], current_rank))
+            current_rank += 1
+        elif len(group) == 2:
+            # Head-to-head logic
+            p1, p2 = group
+            match = PoolLeagueMatch.objects.filter(
+                event=event,
+                player1__in=[p1, p2],
+                player2__in=[p1, p2],
+                completed=True
+            ).first()
+
+            if match and match.winner:
+                winner = match.winner
+                loser = p1 if winner == p2 else p2
+                ranked_players.append((winner, current_rank))
+                ranked_players.append((loser, current_rank + 1))
+                current_rank += 2
+            else:
+                # No valid match found — fallback to shared points
+                avg_points = config.get_points_for_rank(current_rank, 2)
+                for player in group:
+                    ranked_players.append((player, current_rank, avg_points))
+                current_rank += 2
+
+        else:
+            # 3+ way tie: split points
+            avg_points = config.get_points_for_rank_range(current_rank, len(group))
+            for player in group:
+                ranked_players.append((player, current_rank, avg_points))
+            current_rank += len(group)
+
+    # Assign points and ranks
+    for item in ranked_players:
+        if len(item) == 2:
+            player, rank = item
+            points = config.get_points_for_rank(rank)
+        else:
+            player, rank, points = item
+
         player.finish_rank = rank
+        player.points_awarded = int(Decimal(points).to_integral_value(rounding=ROUND_HALF_UP))
         player.has_finished = True
         player.save()
 
@@ -383,18 +433,44 @@ def enter_edarts_results(request, event_id):
     config = event.darts_config
     participant_id = request.session.get('participant_id')
 
-    # Optional: limit access to participants or admin
     if not participant_id:
         messages.error(request, "You must join the event first.")
         return redirect('enter_event_code')
 
     participant = get_object_or_404(Participant, id=participant_id, event=event)
 
+    if event.edarts_completed:
+        return render(request, 'events/enter_edarts_results.html', {
+            'event': event,
+            'groups': groups,
+            'readonly': True,
+        })
+
     if request.method == 'POST':
+        # 🧠 Existing validation code here...
+        for group in groups:
+            positions = []
+            for player in group.participants.all():
+                key = f"position_{group.id}_{player.id}"
+                val = request.POST.get(key)
+                if not val:
+                    messages.error(request, f"Missing finishing position for {player.username} in Group {group.group_number}")
+                    return redirect('enter_edarts_results', event_id=event.id)
+                positions.append(int(val))
+
+            if len(set(positions)) != len(positions):
+                messages.error(request, f"Duplicate positions in Group {group.group_number}.")
+                return redirect('enter_edarts_results', event_id=event.id)
+
+            if sorted(positions) != list(range(1, len(positions) + 1)):
+                messages.error(request, f"Invalid positions in Group {group.group_number}. Use 1 to {len(positions)}.")
+                return redirect('enter_edarts_results', event_id=event.id)
+
+        # ✅ Save results
         for group in groups:
             for player in group.participants.all():
                 key = f"position_{group.id}_{player.id}"
-                position = int(request.POST.get(key, 0))
+                position = int(request.POST.get(key))
                 points = config.get_points_for_position(position)
 
                 EDartsResult.objects.update_or_create(
@@ -406,7 +482,6 @@ def enter_edarts_results(request, event_id):
                     }
                 )
 
-                # 🧠 Store in participant.kept_scores (like mini_golf)
                 if not player.kept_scores:
                     player.kept_scores = {}
 
@@ -416,12 +491,17 @@ def enter_edarts_results(request, event_id):
                 }
                 player.save()
 
+        # 🔒 Mark event as completed
+        event.edarts_completed = True
+        event.save()
+
         return redirect('live_leaderboard', event_code=event.code)
 
     return render(request, 'events/enter_edarts_results.html', {
         'event': event,
         'groups': groups
     })
+
 
 
 def killer_game_view(request, event_id):
