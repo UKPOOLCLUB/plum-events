@@ -2,9 +2,48 @@
 
 {% block content %}
 <script>
-  document.body.dataset.pollingUrl = "{% url 'event_state' event.code %}";
-  window.leaderboardRedirectUrl = "{% url 'live_leaderboard' event.code %}";
+  const pollingUrl = "{% url 'event_state' event.code %}";
+  const leaderboardRedirectUrl = "{% url 'live_leaderboard' event.code %}";
+
+  async function pollWaitingRoom() {
+    try {
+      const response = await fetch(pollingUrl);
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      // Handle event start
+      if (data.started) {
+        window.location.href = leaderboardRedirectUrl;
+        return;
+      }
+
+      // Update players list
+      const playerList = document.querySelector("ul.list-group");
+      playerList.innerHTML = ""; // clear current list
+
+      if (data.participants.length === 0) {
+        const li = document.createElement("li");
+        li.className = "list-group-item text-muted";
+        li.textContent = "No players yet.";
+        playerList.appendChild(li);
+      } else {
+        data.participants.forEach(p => {
+          const li = document.createElement("li");
+          li.className = "list-group-item bg-dark text-light border-accent";
+          li.textContent = p.username;
+          playerList.appendChild(li);
+        });
+      }
+
+    } catch (err) {
+      console.error("Polling error:", err);
+    }
+  }
+
+  setInterval(pollWaitingRoom, 3000); // every 3 seconds
 </script>
+
 
 <div class="container d-flex flex-column justify-content-center align-items-center vh-100 text-center">
 

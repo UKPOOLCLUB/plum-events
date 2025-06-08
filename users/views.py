@@ -77,8 +77,18 @@ def waiting_room(request, event_code):
 
 def event_state(request, event_code):
     event = get_object_or_404(Event, code__iexact=event_code)
+
+    # If the event has started, signal redirect
+    if event.has_started:
+        return JsonResponse({'started': True})
+
+    # Otherwise return current participant list
+    participants = event.participants.all().order_by('joined_at')
+    participant_data = [{'username': p.username} for p in participants]
+
     return JsonResponse({
-        'has_started': event.has_started
+        'started': False,
+        'participants': participant_data
     })
 
 @user_passes_test(lambda u: u.is_superuser)
