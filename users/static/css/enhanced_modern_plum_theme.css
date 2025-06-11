@@ -1,0 +1,124 @@
+
+/* Modern Plum Theme - Enhanced for Clean, Sharp Look */
+
+body,
+body.plum-theme {
+  background-color: #F4F5F7;
+  color: #2C3E50;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+h2, h3, h4 {
+  color: #1C2833;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.card {
+  background-color: #FFFFFF;
+  border: 1px solid #DADFE3;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  margin-bottom: 1rem;
+}
+
+.btn {
+  border-radius: 4px;
+  transition: background 0.2s ease-in-out;
+  font-weight: 500;
+  padding: 0.4rem 0.9rem;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.btn-success {
+  background-color: #00A896;
+  color: #fff;
+  border: none;
+}
+
+.btn-success:hover {
+  background-color: #028d7e;
+}
+
+.table {
+  background-color: #fff;
+  color: #2C3E50;
+  border: 1px solid #DADFE3;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  vertical-align: middle;
+  border-color: #E1E5EA;
+  padding: 0.5rem 0.75rem;
+}
+
+input.form-control {
+  background-color: #FDFDFD;
+  border: 1px solid #CED4DA;
+  color: #2C3E50;
+  padding: 0.4rem 0.6rem;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+input.form-control::placeholder {
+  color: #9A9A9A;
+}
+
+input[type="number"].form-control {
+  max-width: 80px;
+  margin: 0 auto;
+}
+
+.alert {
+  border-radius: 4px;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+}
+
+.alert-primary {
+  background-color: #E3F2FD;
+  border-color: #BBDEFB;
+  color: #1565C0;
+}
+
+.alert-success {
+  background-color: #E6F4F1;
+  border-color: #A5D6C9;
+  color: #00796B;
+}
+
+.alert-danger {
+  background-color: #FDECEA;
+  border: 1px solid #F5C6CB;
+  color: #C82333;
+}
+
+.text-accent {
+  color: #007B8A;
+}
+
+.border-accent {
+  border: 1px solid #007B8A;
+}
+
+.blink {
+  animation: none;
+}
+
+.neon-heading {
+  color: #1C2833;
+  font-size: 1.75rem;
+  text-shadow: none;
+  font-weight: 600;
+}
