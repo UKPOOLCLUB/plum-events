@@ -12,7 +12,7 @@
 
   <!-- Game Navigation -->
   <div class="mb-4">
-      <h6 class="text-accent">Choose :</h6>
+      <h6 class="text-accent">Choose Game:</h6>
       <div class="d-flex flex-wrap justify-content-center gap-2">
           {% for game_code in selected_games %}
               {% with game_name=selected_game_names|index:forloop.counter0 %}
@@ -25,7 +25,7 @@
                           {{ game_name }}
                       </a>
                   {% elif game_code == "pool_league" %}
-                      <a href="{% url 'pool_league_matrix' event.id %}" class="btn btn-outline-light btn-sm">
+                      <a href="{% url 'pool_league_view' event.id %}" class="btn btn-outline-light btn-sm">
                           {{ game_name }}
                       </a>
                   {% elif game_code == "e_darts" %}

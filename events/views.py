@@ -12,6 +12,8 @@ from django.http import HttpResponseForbidden
 from events.models import Event, Participant
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
+from django.db.models import Q
+
 
 def enter_golf_scores(request, group_id):
     group = get_object_or_404(MiniGolfGroup, id=group_id)
@@ -269,53 +271,71 @@ def table_tennis_state(request, event_id):
     })
 
 
-def pool_league_matrix_view(request, event_id):
+def pool_league_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    players = PoolLeaguePlayer.objects.filter(event_id=event_id).select_related('participant')
-    matches = PoolLeagueMatch.objects.filter(event_id=event_id)
+    participant_id = request.session.get('participant_id')
 
-    # Create a dict to fetch matches by player1-player2 ID combinations (in both orders)
-    match_dict = {}
-    for match in matches:
-        p1_id = match.player1_id
-        p2_id = match.player2_id
-        key = f"{min(p1_id, p2_id)}-{max(p1_id, p2_id)}"
-        match_dict[key] = match
+    if not participant_id:
+        return redirect('live_leaderboard', event_code=event.code)
 
+    try:
+        current_player = PoolLeaguePlayer.objects.select_related('participant').get(
+            event=event,
+            participant_id=participant_id
+        )
+    except PoolLeaguePlayer.DoesNotExist:
+        return redirect('enter_username', event_code=event.code)
+
+    # Fetch only this player's matches
+    matches = PoolLeagueMatch.objects.filter(
+        event=event
+    ).filter(
+        Q(player1=current_player) | Q(player2=current_player)
+    ).select_related('player1__participant', 'player2__participant')
+
+    all_players = PoolLeaguePlayer.objects.filter(event=event).select_related('participant')
     league_completed = is_pool_league_complete(event)
 
     standings = []
     if league_completed:
-        standings = PoolLeaguePlayer.objects.filter(event=event).select_related('participant').order_by('finish_rank')
+        standings = all_players.order_by('finish_rank')
 
     context = {
-        "event": event,
-        "players": players,
-        "matches": match_dict,
-        "league_completed": league_completed,
-        "standings": standings,
+        'event': event,
+        'current_player': current_player,
+        'matches': matches,
+        'all_players': all_players,
+        'league_completed': league_completed,
+        'standings': standings,
     }
-    return render(request, "events/pool_league_matrix.html", context)
+    return render(request, "events/pool_league_view.html", context)
 
 
 @require_POST
 def submit_pool_match_result(request):
     match_id = request.POST.get('match_id')
     winner_id = request.POST.get('winner_id')
+    participant_id = request.session.get('participant_id')
+
+    if not participant_id:
+        return JsonResponse({'success': False, 'error': 'Not authenticated'})
 
     try:
         match = PoolLeagueMatch.objects.get(id=match_id)
+        submitting_player = PoolLeaguePlayer.objects.get(event=match.event, participant_id=participant_id)
         winner = PoolLeaguePlayer.objects.get(id=winner_id)
     except PoolLeagueMatch.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Match not found'})
     except PoolLeaguePlayer.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Winner not found'})
+        return JsonResponse({'success': False, 'error': 'Invalid player'})
+
+    if submitting_player != match.player1 and submitting_player != match.player2:
+        return JsonResponse({'success': False, 'error': 'Not authorized to submit this result'})
 
     match.winner = winner
     match.completed = True
     match.save()
 
-    # Update win count
     winner.wins += 1
     winner.save()
 
@@ -323,6 +343,7 @@ def submit_pool_match_result(request):
         finalize_pool_league(match.event)
 
     return JsonResponse({'success': True})
+
 
 def is_pool_league_complete(event):
     return not PoolLeagueMatch.objects.filter(event=event, completed=False).exists()

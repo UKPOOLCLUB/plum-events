@@ -70,86 +70,73 @@
     </a>
 </div>
 
-{% if league_completed %}
-    <div class="alert alert-success text-center mt-5">
-        <h4 class="mb-3">🏆 Pool League Completed!</h4>
-        <p>Here are the final standings:</p>
-
-        <table class="table table-dark table-bordered text-center mt-4 matrix-table">
-            <thead class="table-dark">
-                <tr>
-                    <th>Rank</th>
-                    <th>Player</th>
-                    <th>Wins</th>
-                    <th>Points Awarded</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for player in standings %}
-                    <tr>
-                        <td>{{ player.finish_rank }}</td>
-                        <td>{{ player.participant.username }}</td>
-                        <td>{{ player.wins }}</td>
-                        <td>{{ player.points_awarded }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+{{% if league_completed %}
+  <h3 class="text-center text-success mb-3">🏁 Final Standings</h3>
+{% else %}
+  <h3 class="text-center text-info mb-3">📊 Current League Standings</h3>
 {% endif %}
 
-<table class="table table-dark table-bordered text-center align-middle matrix-table">
-    <thead>
-        <tr>
-            <th>Player</th>
-            {% for col_player in players %}
-                <th>{{ col_player.participant.username }}</th>
-            {% endfor %}
-            <th>Total Wins</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row_player in players %}
-            <tr>
-                <th>{{ row_player.participant.username }}</th>
-                {% for col_player in players %}
-                    {% if row_player == col_player %}
-                        <td class="bg-light">—</td>
-                    {% else %}
-                        {% with key=row_player.id|match_key:col_player.id %}
-                            {% with match=matches|get_match:key %}
-                                {% if match %}
-                                    {% if match.completed %}
-                                        {% if match.winner_id == row_player.id %}
-                                            <td class="text-success">✅</td>
-                                        {% else %}
-                                            <td class="text-danger">❌</td>
-                                        {% endif %}
-                                    {% else %}
-                                        <td class="clickable-result-cell bg-warning text-dark"
-                                            data-match-id="{{ match.id }}"
-                                            data-player1="{{ match.player1.participant.username }}"
-                                            data-player1-id="{{ match.player1.id }}"
-                                            data-player2="{{ match.player2.participant.username }}"
-                                            data-player2-id="{{ match.player2.id }}">
-                                            Select
-                                        </td>
-                                    {% endif %}
-                                {% else %}
-                                    <td></td>
-                                {% endif %}
-                            {% endwith %}
-                        {% endwith %}
-                    {% endif %}
-                {% endfor %}
-                <td><strong>{{ row_player.wins }}</strong></td>
-            </tr>
-        {% endfor %}
-    </tbody>
+<table class="table table-dark table-bordered text-center">
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Wins</th>
+      <th>Points</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in all_players|dictsortreversed:"wins" %}
+      <tr class="{% if player == current_player %}table-success{% endif %}">
+        <td>{{ forloop.counter }}</td>
+        <td>{{ player.participant.username }}</td>
+        <td>{{ player.wins }}</td>
+        <td>{{ player.points_awarded|default:"–" }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
 </table>
 
+<h4 class="mt-5 mb-3 text-accent">🎯 Your Fixtures</h4>
 
-
+<table class="table table-striped table-bordered text-center">
+  <thead>
+    <tr>
+      <th>Opponent</th>
+      <th>Status</th>
+      <th>Submit Result</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for match in matches %}
+      {% with opponent=match.player2 if match.player1 == current_player else match.player1 %}
+      <tr>
+        <td>{{ opponent.participant.username }}</td>
+        <td>
+          {% if match.completed %}
+            {% if match.winner == current_player %}<span class="text-success">✅ Win</span>
+            {% else %}<span class="text-danger">❌ Loss</span>{% endif %}
+          {% else %}
+            <span class="text-warning">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if not match.completed %}
+            <form method="post" action="{% url 'submit_pool_match_result' %}">
+              {% csrf_token %}
+              <input type="hidden" name="match_id" value="{{ match.id }}">
+              <input type="hidden" name="winner_id" value="{{ current_player.id }}">
+              <button class="btn btn-outline-success btn-sm">🏆 I Won</button>
+            </form>
+          {% else %}
+            –
+          {% endif %}
+        </td>
+      </tr>
+      {% endwith %}
+    {% endfor %}
+  </tbody>
+</table>
 
 <!-- Result Submission Modal -->
 <div class="modal fade" id="submitResultModal" tabindex="-1">
