@@ -274,46 +274,47 @@ def table_tennis_state(request, event_id):
 from django.http import HttpResponse
 
 def pool_league_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    participant_id = request.session.get('participant_id')
+
+    if not participant_id:
+        return redirect('live_leaderboard', event_code=event.code)
+
     try:
-        event = get_object_or_404(Event, id=event_id)
-        participant_id = request.session.get('participant_id')
+        current_player = PoolLeaguePlayer.objects.select_related('participant').get(
+            event=event,
+            participant_id=participant_id
+        )
+    except PoolLeaguePlayer.DoesNotExist:
+        return redirect('enter_username', event_code=event.code)
 
-        if not participant_id:
-            return redirect('live_leaderboard', event_code=event.code)
+    # Fetch only this player's matches
+    matches = PoolLeagueMatch.objects.filter(
+        event=event
+    ).filter(
+        Q(player1=current_player) | Q(player2=current_player)
+    ).select_related('player1__participant', 'player2__participant')
 
-        try:
-            current_player = PoolLeaguePlayer.objects.select_related('participant').get(
-                event=event,
-                participant_id=participant_id
-            )
-        except PoolLeaguePlayer.DoesNotExist:
-            return redirect('enter_username', event_code=event.code)
+    # Annotate opponent for each match so templates are simple
+    for match in matches:
+        match.opponent = match.player2 if match.player1 == current_player else match.player1
 
-        matches = PoolLeagueMatch.objects.filter(
-            event=event
-        ).filter(
-            Q(player1=current_player) | Q(player2=current_player)
-        ).select_related('player1__participant', 'player2__participant')
+    all_players = PoolLeaguePlayer.objects.filter(event=event).select_related('participant')
+    league_completed = is_pool_league_complete(event)
 
-        all_players = PoolLeaguePlayer.objects.filter(event=event).select_related('participant')
-        league_completed = is_pool_league_complete(event)
+    standings = []
+    if league_completed:
+        standings = all_players.order_by('finish_rank')
 
-        standings = []
-        if league_completed:
-            standings = all_players.order_by('finish_rank')
-
-        context = {
-            'event': event,
-            'current_player': current_player,
-            'matches': matches,
-            'all_players': all_players,
-            'league_completed': league_completed,
-            'standings': standings,
-        }
-        return render(request, "events/pool_league_view.html", context)
-
-    except Exception as e:
-        return HttpResponse(f"<h1>View Crashed</h1><p>{e}</p>")
+    context = {
+        'event': event,
+        'current_player': current_player,
+        'matches': matches,
+        'all_players': all_players,
+        'league_completed': league_completed,
+        'standings': standings,
+    }
+    return render(request, "events/pool_league_view.html", context)
 
 
 @require_POST

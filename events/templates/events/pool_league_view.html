@@ -109,9 +109,8 @@
   </thead>
   <tbody>
     {% for match in matches %}
-      {% with opponent=match.player2 if match.player1 == current_player else match.player1 %}
       <tr>
-        <td>{{ opponent.participant.username }}</td>
+        <td>{{ match.opponent.participant.username }}</td>
         <td>
           {% if match.completed %}
             {% if match.winner == current_player %}<span class="text-success">✅ Win</span>
