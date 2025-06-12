@@ -41,31 +41,47 @@
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
     <form method="post" action="{% url 'killer_submit_turn' event.id %}">
-      {% csrf_token %}
-      <div class="d-grid gap-2">
+  {% csrf_token %}
 
-        <button name="action" value="successful_pot" class="btn btn-success btn-sm w-100 text-start">
-          ✅ Successful Pot
-        </button>
+  <div class="mb-2">
+    <!-- Row 1: Successful Pot -->
+    <div class="d-grid">
+      <button name="action" value="successful_pot"
+        class="btn btn-success rounded-pill py-2 fw-semibold">
+        ✅ Successful Pot
+      </button>
+    </div>
+  </div>
 
-        <button name="action" value="lose_one_life" class="btn btn-danger btn-sm w-100 text-start">
-          ❌ Lose 1 Life
-        </button>
+  <div class="mb-2">
+    <!-- Row 2: Lose 1 / Lose 2 -->
+    <div class="d-flex flex-wrap gap-2">
+      <button name="action" value="lose_one_life"
+        class="btn btn-danger rounded-pill flex-fill py-2 fw-semibold">
+        ❌ Lose 1 Life
+      </button>
+      <button name="action" value="lose_two_lives"
+        class="btn btn-danger rounded-pill flex-fill py-2 fw-semibold">
+        ❌❌ Lose 2 Lives
+      </button>
+    </div>
+  </div>
 
-        <button name="action" value="lose_two_lives" class="btn btn-danger btn-sm w-100 text-start">
-          ❌❌ Lose 2 Lives
-        </button>
+  <div>
+    <!-- Row 3: Add Life / Force Repeat -->
+    <div class="d-flex flex-wrap gap-2">
+      <button name="action" value="add_life"
+        class="btn btn-warning rounded-pill flex-fill py-2 fw-semibold">
+        🎱➕ Add Life (Potted Black)
+      </button>
+      <button name="action" value="repeat_previous"
+        class="btn btn-secondary rounded-pill flex-fill py-2 fw-semibold">
+        🔁 Force Previous Player Again
+      </button>
+    </div>
+  </div>
+</form>
 
-        <button name="action" value="add_life" class="btn btn-warning btn-sm w-100 text-start">
-          🎱➕ Add Life (Potted Black)
-        </button>
-
-        <button name="action" value="repeat_previous" class="btn btn-secondary btn-sm w-100 text-start">
-          🔁 Force Previous Player Again
-        </button>
-
-      </div>
-    </form>
   </div>
 {% endif %}
 
@@ -176,6 +192,35 @@
   opacity: 0.5;
   text-decoration: line-through;
 }
+
+.btn-success {
+  background-color: #00ff84;
+  color: black;
+  box-shadow: 0 0 10px #00ff84;
+}
+
+.btn-danger {
+  background-color: #ff4d4d;
+  color: white;
+  box-shadow: 0 0 10px #ff4d4d;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  color: black;
+  box-shadow: 0 0 10px #ffc107;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  box-shadow: 0 0 10px #999;
+}
+
+.btn {
+  min-width: 140px;
+}
+
 </style>
 
 {% endblock %}
