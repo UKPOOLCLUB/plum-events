@@ -15,15 +15,17 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Q
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 def enter_golf_scores(request, group_id):
     group = get_object_or_404(MiniGolfGroup, id=group_id)
     event = group.event
     holes = event.golf_config.holes
     players = group.players.all()
 
-    # 🧠 Get saved scores from MiniGolfScorecard
     scorecard = MiniGolfScorecard.objects.filter(group=group).first()
-    scores = scorecard.data if scorecard else {}
+    scores = scorecard.data if scorecard and scorecard.data else {}
 
     participant_id = request.session.get('participant_id')
     can_edit = False
@@ -38,16 +40,22 @@ def enter_golf_scores(request, group_id):
         except Participant.DoesNotExist:
             pass
 
-    # Recalculate totals from scores
+    # Safe recalculation of totals
     totals = {}
     for player in players:
-        player_scores = scores.get(player.username, {})
-        totals[player.id] = sum(int(v) for v in player_scores.values())
+        try:
+            player_scores = scores.get(player.username, {})
+            totals[player.id] = sum(int(v) for v in player_scores.values() if v is not None)
+        except Exception as e:
+            logger.error("Error calculating total for player %s: %s", player.username, e)
+            totals[player.id] = 0
+
+    logger.info("Loaded golf scorecard: group %s | players: %s | totals: %s", group_id, [p.username for p in players], totals)
 
     return render(request, 'events/enter_golf_scores.html', {
         'group': group,
         'players': players,
-        'holes': list(range(1, holes + 1)),  # So it's indexable
+        'holes': list(range(1, holes + 1)),
         'can_edit': can_edit,
         'scorekeeper': group.scorekeeper,
         'totals': totals,

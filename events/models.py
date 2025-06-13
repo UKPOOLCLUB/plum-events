@@ -61,7 +61,7 @@ class MiniGolfScorecard(models.Model):
 # New model in events/models.py
 class MiniGolfConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='golf_config')
-    holes = models.IntegerField(choices=[(9, "9 Holes"), (18, "18 Holes")], default=9)
+    holes = models.IntegerField(choices=[(9, "9 Holes"), (18, "18 Holes")], default=18)
     group_size_min = models.IntegerField(default=3)
     group_size_max = models.IntegerField(default=4)
     points_first = models.IntegerField(default=50)
