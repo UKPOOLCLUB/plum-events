@@ -8,7 +8,7 @@ from .models import PoolLeaguePlayer, PoolLeagueMatch, EDartsGroup, EDartsConfig
 from .models import Killer, KillerPlayer
 from .utils import create_balanced_groups
 from django.contrib import messages
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseBadRequest
 from events.models import Event, Participant
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
@@ -120,11 +120,15 @@ def redirect_to_golf_group(request, event_code):
 
 def submit_golf_scorecard(request, group_id):
     group = get_object_or_404(MiniGolfGroup, id=group_id)
-    scorecard = MiniGolfScorecard.objects.get(group=group)
+
+    # Safely get scorecard or handle error
+    try:
+        scorecard = MiniGolfScorecard.objects.get(group=group)
+    except MiniGolfScorecard.DoesNotExist:
+        return HttpResponseBadRequest("Scorecard not found. Please save scores before submitting.")
+
     config = MiniGolfConfig.objects.get(event=group.event)
     holes = config.holes
-
-    print("Hello Submit_score")
 
     # Validate complete scorecards
     for username, hole_scores in scorecard.data.items():
@@ -137,14 +141,11 @@ def submit_golf_scorecard(request, group_id):
         total = sum(int(v) for v in hole_scores.values())
         player_totals.append((username, total))
 
-    # Sort by strokes (ascending = better)
-    player_totals.sort(key=lambda x: x[1])
+    player_totals.sort(key=lambda x: x[1])  # sort by strokes
 
-    # Assign points
     for i, (username, strokes) in enumerate(player_totals):
         participant = Participant.objects.get(username=username, event=group.event)
 
-        # Assign position-based points
         if i == 0:
             points = config.points_first
         elif i == 1:
@@ -157,7 +158,6 @@ def submit_golf_scorecard(request, group_id):
         if not participant.kept_scores:
             participant.kept_scores = {}
 
-        # ✅ Store both points and finishing position
         participant.kept_scores["mini_golf"] = {
             "points": points,
             "position": i + 1,
