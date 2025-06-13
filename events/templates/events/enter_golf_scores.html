@@ -1,8 +1,3 @@
-{% extends "base.html" %}
-{% load golf_extras %}
-
-{% block content %}
-
 {% if group.id %}
 <script>
   document.body.dataset.pollingUrl = "{% url 'golf_scorecard_state' group.id %}";
@@ -19,107 +14,152 @@
   </a>
 </div>
 
-{% if can_edit and not scorecard.submitted %}
-<form method="post" action="{% url 'submit_golf_scorecard' group.id %}">
+<!-- Hidden form used for auto-submit -->
+<form id="auto-submit-form" method="post" action="{% url 'submit_golf_scorecard' group.id %}">
   {% csrf_token %}
-{% endif %}
+</form>
 
-<!-- Front 9 Table (shown in both 9-hole and 18-hole games) -->
+<!-- Front 9 Table -->
 <h5 class="text-center mt-4">Front 9</h5>
-<table class="table table-bordered text-center align-middle mb-4">
-  <thead class="table-light">
-    <tr>
-      <th>Player</th>
-      {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
-      <th>Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for player in players %}
-    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
-      <td>{{ player.username }}</td>
-      {% for hole in holes|slice:":9" %}
-        <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Player</th>
+        {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+        <td>{{ player.username }}</td>
+        {% for hole in holes|slice:":9" %}
+        <td>
+          <input type="number" class="score-input"
+                 data-group="{{ group.id }}"
+                 data-username="{{ player.username }}"
+                 data-hole="{{ hole }}"
+                 min="1" max="6"
+                 value="{{ scores|get_item:player.username|get_item:hole }}">
+        </td>
+        {% endfor %}
+        <td id="front9_{{ player.username }}"><strong>0</strong></td>
+      </tr>
       {% endfor %}
-      <td id="front9_{{ player.username }}"><strong>0</strong></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</div>
 
-<!-- Back 9 Table (only shown for 18-hole games) -->
+<!-- Back 9 Table (if 18 holes) -->
 {% if holes|length == 18 %}
 <h5 class="text-center">Back 9</h5>
-<table class="table table-bordered text-center align-middle mb-4">
-  <thead class="table-light">
-    <tr>
-      <th>Player</th>
-      {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
-      <th>Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for player in players %}
-    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
-      <td>{{ player.username }}</td>
-      {% for hole in holes|slice:"9:" %}
-        <td>{% include "events/partials/hole_input.html" with player=player hole=hole %}</td>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Player</th>
+        {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+        <td>{{ player.username }}</td>
+        {% for hole in holes|slice:"9:" %}
+        <td>
+          <input type="number" class="score-input"
+                 data-group="{{ group.id }}"
+                 data-username="{{ player.username }}"
+                 data-hole="{{ hole }}"
+                 min="1" max="6"
+                 value="{{ scores|get_item:player.username|get_item:hole }}">
+        </td>
+        {% endfor %}
+        <td id="back9_{{ player.username }}"><strong>0</strong></td>
+      </tr>
       {% endfor %}
-      <td id="back9_{{ player.username }}"><strong>0</strong></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</div>
 {% endif %}
 
-<!-- Totals Row (always shown) -->
+<!-- Total Score Table -->
 <h5 class="text-center">Total Score</h5>
-<table class="table table-bordered text-center align-middle">
-  <thead class="table-light">
-    <tr>
-      <th>Player</th>
-      <th>Total Strokes</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for player in players %}
-    <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
-      <td>{{ player.username }}</td>
-      <td id="total_{{ player.username }}"><strong>0</strong></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Player</th>
+        <th>Total Strokes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
+        <td>{{ player.username }}</td>
+        <td id="total_{{ player.username }}"><strong>0</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-
-{% if can_edit and not scorecard.submitted %}
-  <div class="text-center">
-    <button type="submit" class="btn btn-primary mt-3">Submit Final Scorecard</button>
+<!-- Submit Confirmation Modal -->
+<div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-dark">
+      <div class="modal-header">
+        <h5 class="modal-title" id="submitModalLabel">Submit Scorecard?</h5>
+      </div>
+      <div class="modal-body">
+        All holes have been filled in. Would you like to submit the scorecard now?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="confirmSubmitBtn" type="button" class="btn btn-success">Yes, Submit</button>
+      </div>
+    </div>
   </div>
-</form>
-{% elif scorecard.submitted %}
-  <p class="text-center mt-3 text-success fw-bold">✅ Scorecard Submitted</p>
-{% endif %}
+</div>
 
+<!-- Input Styling -->
 <style>
+.score-input {
+  width: 100%;
+  max-width: 60px;
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: center;
+  padding: 4px;
+  margin: auto;
+  box-sizing: border-box;
+}
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 input[type=number] {
-    -moz-appearance: textfield;
-    text-align: center;
-    padding: 4px;
-    font-weight: bold;
-    font-size: 16px;
-    width: 45px;
+  -moz-appearance: textfield;
 }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const inputs = document.querySelectorAll('.score-input');
+    const csrfToken = '{{ csrf_token }}';
+    const totalHoles = {{ holes|length }};
+    const expectedEntries = totalHoles * {{ players|length }};
+    const form = document.getElementById('auto-submit-form');
+    const modal = new bootstrap.Modal(document.getElementById('submitModal'));
+
+    function updateAndSave(input) {
+        updateTotals();
+        autoSave(input);
+        checkCompletionAndPrompt();
+    }
 
     function updateTotals() {
         const playerScores = {};
@@ -144,17 +184,52 @@ document.addEventListener('DOMContentLoaded', function () {
 
         for (const [username, totals] of Object.entries(playerScores)) {
             document.getElementById(`front9_${username}`).innerHTML = `<strong>${totals.front9}</strong>`;
-            document.getElementById(`back9_${username}`).innerHTML = `<strong>${totals.back9}</strong>`;
+            document.getElementById(`back9_${username}`)?.innerHTML = `<strong>${totals.back9}</strong>`;
             document.getElementById(`total_${username}`).innerHTML = `<strong>${totals.total}</strong>`;
         }
     }
 
+    function autoSave(input) {
+        const data = new URLSearchParams();
+        data.append('group_id', input.dataset.group);
+        data.append('username', input.dataset.username);
+        data.append('hole', input.dataset.hole);
+        data.append('strokes', input.value);
+
+        fetch("{% url 'save_golf_score' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: data
+        }).then(response => response.json())
+          .then(data => {
+              if (!data.success) {
+                  alert("⚠️ Error saving score: " + data.error);
+              }
+          });
+    }
+
+    function checkCompletionAndPrompt() {
+        const filled = Array.from(inputs).filter(i => i.value !== '').length;
+        if (filled === expectedEntries) {
+            // All scores filled in
+            modal.show();
+        }
+    }
+
     inputs.forEach(input => {
-        input.addEventListener('input', updateTotals);
+        input.addEventListener('change', () => updateAndSave(input));
     });
 
     updateTotals();
+
+    document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
+        form.submit();
+    });
 });
 </script>
+
 
 {% endblock %}
