@@ -19,7 +19,8 @@
   </a>
 </div>
 
-{% if players|length >= 2 %}
+{% if not game_complete and players|length >= 2 %}
+  <!-- Game Still In Progress -->
   <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap mb-4">
       <!-- Player 1 -->
       <div class="text-center">
@@ -41,14 +42,17 @@
           <button type="submit" class="btn btn-outline-success">🏆 Wins</button>
         </form>
       </div>
+  </div>
+
+  {% if players|length > 2 %}
+    <div class="text-center mb-2">
+      <p class="text-accent fw-semibold mb-1">Up Next: {{ players.2.participant.username }}</p>
+      <br>
     </div>
-
-
-  <!-- Up Next -->
-{% if players|length > 2 %}
-  <div class="text-center mb-2">
-    <p class="text-accent fw-semibold mb-1">Up Next: {{ players.2.participant.username }}</p>
-    <br>
+  {% endif %}
+{% elif game_complete %}
+  <div class="alert alert-success text-center fw-bold fs-5">
+    🏁 Game Complete – Final Standings Below
   </div>
 {% endif %}
 
@@ -65,22 +69,12 @@
     </thead>
     <tbody>
       {% for p in all_players %}
-      <tr
-        {% if p.id == players.0.id or p.id == players.1.id %}
-          class="table-success"
-        {% elif players|length > 2 and p.id == players.2.id %}
-          class="table-warning"
-        {% endif %}
-      >
+      <tr>
         <td class="fw-semibold">{{ p.participant.username }}</td>
         <td>{{ p.games_won }}</td>
         <td>
           {% if p.has_finished %}
             <span class="badge bg-secondary">Finished ({{ p.finish_rank }}<sup>{% if p.finish_rank == 1 %}st{% elif p.finish_rank == 2 %}nd{% elif p.finish_rank == 3 %}rd{% else %}th{% endif %}</sup>)</span>
-          {% elif p.id == players.0.id or p.id == players.1.id %}
-            <span class="badge bg-success">Playing</span>
-          {% elif players|length > 2 and p.id == players.2.id %}
-            <span class="badge bg-warning text-dark">Up Next</span>
           {% else %}
             <span class="badge bg-light text-dark">Waiting</span>
           {% endif %}
@@ -91,8 +85,6 @@
     </tbody>
   </table>
 </div>
-
-{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

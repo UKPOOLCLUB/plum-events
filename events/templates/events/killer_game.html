@@ -40,50 +40,54 @@
     <!-- Action Buttons -->
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
+
+    {% if killer.repeat_shot_forced and killer.previous_player %}
+      <div class="alert alert-warning text-center py-2 mb-2">
+        🔁 <strong>{{ killer.previous_player.participant.username }}</strong> must repeat their shot!
+      </div>
+    {% elif killer.repeat_shot_pending and killer.previous_player and not killer.previous_player.eliminated %}
+      <div class="alert alert-info text-center py-2 mb-2">
+        🎯 <strong>{{ current_player.participant.username }}</strong>, you can force {{ killer.previous_player.participant.username }} to play again!
+      </div>
+    {% endif %}
+
     <form method="post" action="{% url 'killer_submit_turn' event.id %}">
-  {% csrf_token %}
+      {% csrf_token %}
 
-  <div class="mb-2">
-    <!-- Row 1: Successful Pot -->
-    <div class="d-grid">
-      <button name="action" value="successful_pot"
-        class="btn btn-success rounded-pill py-2 fw-semibold">
-        ✅ Successful Pot
-      </button>
-    </div>
-  </div>
+      <!-- Row 1: Successful Pot -->
+      <div class="d-grid mb-2">
+        <button name="action" value="successful_pot" class="btn btn-success btn-sm text-center rounded-pill">
+          ✅ Successful Pot
+        </button>
+      </div>
 
-  <div class="mb-2">
-    <!-- Row 2: Lose 1 / Lose 2 -->
-    <div class="d-flex flex-wrap gap-2">
-      <button name="action" value="lose_one_life"
-        class="btn btn-danger rounded-pill flex-fill py-2 fw-semibold">
-        ❌ Lose 1 Life
-      </button>
-      <button name="action" value="lose_two_lives"
-        class="btn btn-danger rounded-pill flex-fill py-2 fw-semibold">
-        ❌❌ Lose 2 Lives
-      </button>
-    </div>
-  </div>
+      <!-- Row 2: Lose 1 & 2 Lives -->
+      <div class="d-flex gap-2 mb-2">
+        <button name="action" value="lose_one_life" class="btn btn-danger btn-sm w-50 rounded-pill">
+          ❌ Lose 1 Life
+        </button>
+        <button name="action" value="lose_two_lives" class="btn btn-danger btn-sm w-50 rounded-pill">
+          ❌❌ Lose 2 Lives
+        </button>
+      </div>
 
-  <div>
-    <!-- Row 3: Add Life / Force Repeat -->
-    <div class="d-flex flex-wrap gap-2">
-      <button name="action" value="add_life"
-        class="btn btn-warning rounded-pill flex-fill py-2 fw-semibold">
-        🎱➕ Add Life (Potted Black)
-      </button>
-      <button name="action" value="repeat_previous"
-        class="btn btn-secondary rounded-pill flex-fill py-2 fw-semibold">
-        🔁 Force Previous Player Again
-      </button>
-    </div>
-  </div>
-</form>
+      <!-- Row 3: Add Life & Repeat Previous -->
+      <div class="d-flex gap-2">
+        <button name="action" value="add_life" class="btn btn-warning btn-sm w-50 rounded-pill">
+          🎱 Add Life
+        </button>
 
+        {% if killer.repeat_shot_pending and not killer.repeat_shot_forced and killer.previous_player and not killer.previous_player.eliminated %}
+          <button name="action" value="repeat_previous" class="btn btn-secondary btn-sm w-50 rounded-pill">
+            🔁 Force Previous Again
+          </button>
+        {% endif %}
+      </div>
+
+    </form>
   </div>
 {% endif %}
+
 
     <!-- Player List -->
     <div class="col-12 col-md-6">
