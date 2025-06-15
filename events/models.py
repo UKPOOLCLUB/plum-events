@@ -113,6 +113,7 @@ class PoolLeaguePlayer(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='pool_league_players')
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
     wins = models.PositiveIntegerField(default=0)
+    losses = models.PositiveIntegerField(default=0)
     frames_won = models.PositiveIntegerField(default=0)  # optional, in case of tie-breaking
     points_awarded = models.PositiveIntegerField(default=0)
     finish_rank = models.PositiveIntegerField(null=True, blank=True)
@@ -120,6 +121,10 @@ class PoolLeaguePlayer(models.Model):
 
     def __str__(self):
         return f"{self.participant}"
+
+    @property
+    def played(self):  # ✅ Optional
+        return self.wins + self.losses
 
     class Meta:
         ordering = ['participant__username']
@@ -221,6 +226,9 @@ class Killer(models.Model):
     is_complete = models.BooleanField(default=False)  # ✅ NEW FIELD
 
     def get_current_player(self):
+        if self.repeat_shot_forced and self.previous_player:
+            return self.previous_player
+
         players = list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
         if not players:
             return None

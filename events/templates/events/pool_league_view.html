@@ -70,7 +70,7 @@
     </a>
 </div>
 
-{{% if league_completed %}
+{% if league_completed %}
   <h3 class="text-center text-success mb-3">🏁 Final Standings</h3>
 {% else %}
   <h3 class="text-center text-info mb-3">📊 Current League Standings</h3>
@@ -78,23 +78,25 @@
 
 <table class="table table-dark table-bordered text-center">
   <thead>
-    <tr>
-      <th>Rank</th>
-      <th>Player</th>
-      <th>Wins</th>
-      <th>Points</th>
+  <tr>
+    <th>Rank</th>
+    <th>Player</th>
+    <th>Played</th>
+    <th>Wins</th>
+    <th>Points</th>
+  </tr>
+</thead>
+<tbody>
+  {% for player in all_players|dictsortreversed:"wins" %}
+    <tr class="{% if player == current_player %}table-success{% endif %}">
+      <td>{{ forloop.counter }}</td>
+      <td>{{ player.participant.username }}</td>
+      <td>{{ player.wins|add:player.losses|default:0 }}</td>  {# Played = wins + losses #}
+      <td>{{ player.wins }}</td>
+      <td>{{ player.points_awarded|default:"–" }}</td>
     </tr>
-  </thead>
-  <tbody>
-    {% for player in all_players|dictsortreversed:"wins" %}
-      <tr class="{% if player == current_player %}table-success{% endif %}">
-        <td>{{ forloop.counter }}</td>
-        <td>{{ player.participant.username }}</td>
-        <td>{{ player.wins }}</td>
-        <td>{{ player.points_awarded|default:"–" }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
+  {% endfor %}
+</tbody>
 </table>
 
 <h4 class="mt-5 mb-3 text-accent">🎯 Your Fixtures</h4>
@@ -124,15 +126,20 @@
             <form method="post" action="{% url 'submit_pool_match_result' %}">
               {% csrf_token %}
               <input type="hidden" name="match_id" value="{{ match.id }}">
-              <input type="hidden" name="winner_id" value="{{ current_player.id }}">
-              <button class="btn btn-outline-success btn-sm">🏆 I Won</button>
+              <form method="post" action="{% url 'submit_pool_match_result' %}" class="d-flex justify-content-around">
+                  {% csrf_token %}
+                  <input type="hidden" name="match_id" value="{{ match.id }}">
+                  <input type="hidden" name="player_id" value="{{ current_player.participant.id }}">
+                  <button name="result" value="win" class="btn btn-success btn-sm">✅ I Won</button>
+                  <button name="result" value="loss" class="btn btn-danger btn-sm">❌ I Lost</button>
+                </form>
+
             </form>
           {% else %}
             –
           {% endif %}
         </td>
       </tr>
-      {% endwith %}
     {% endfor %}
   </tbody>
 </table>
@@ -194,5 +201,19 @@ function submitResult(matchId, winnerId) {
     });
 }
 </script>
+
+<script>
+  // Refresh every 5 seconds
+  setInterval(() => {
+    fetch("{% url 'pool_league_state' event.id %}")
+      .then(response => response.json())
+      .then(data => {
+        if (data.state_changed) {
+          location.reload();
+        }
+      });
+  }, 5000);
+</script>
+
 
 {% endblock %}

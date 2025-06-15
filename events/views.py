@@ -13,6 +13,7 @@ from events.models import Event, Participant
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Q
+from uuid import UUID
 
 
 import logging
@@ -189,13 +190,13 @@ def table_tennis_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     config = event.table_tennis_config
 
-    # Only active players in the queue (exclude those who finished)
+    # Active players (not finished)
     players = TableTennisPlayer.objects.filter(
         event=event,
         has_finished=False
     ).order_by('queue_position')
 
-    # All players, including finished ones, for leaderboard
+    # All players (used for leaderboard)
     finished = TableTennisPlayer.objects.filter(
         event=event,
         has_finished=True
@@ -208,20 +209,28 @@ def table_tennis_game_view(request, event_id):
 
     all_players = list(finished) + list(active)
 
+    # Determine if the game is complete (e.g., 6 players have finished)
+    game_complete = finished.count() >= 6
+
     context = {
         'event': event,
-        'players': players,  # used for current match-up and "up next"
-        'all_players': all_players,  # used for full leaderboard
+        'players': players,
+        'all_players': all_players,
         'config': config,
+        'game_complete': game_complete,
     }
     return render(request, 'events/table_tennis_game.html', context)
-
-
 
 def submit_table_tennis_result(request, event_id, winner_id):
     event = get_object_or_404(Event, id=event_id)
     config = event.table_tennis_config
     players = list(TableTennisPlayer.objects.filter(event=event, has_finished=False).order_by('queue_position'))
+
+    # End game if all point-awarding ranks have been assigned
+    finishers_count = TableTennisPlayer.objects.filter(event=event, has_finished=True).count()
+    max_rank = 6  # Matches your config: points awarded down to 6th place
+    if finishers_count >= max_rank:
+        return redirect('table_tennis_game_view', event_id=event.id)
 
     if len(players) < 2:
         return redirect('table_tennis_game_view', event_id=event.id)
@@ -328,30 +337,42 @@ def pool_league_view(request, event_id):
 @require_POST
 def submit_pool_match_result(request):
     match_id = request.POST.get('match_id')
-    winner_id = request.POST.get('winner_id')
-    participant_id = request.session.get('participant_id')
+    result = request.POST.get('result')  # "win" or "loss"
+    raw_participant_id = request.POST.get('player_id') or request.session.get('participant_id')
 
-    if not participant_id:
+    if not raw_participant_id:
         return JsonResponse({'success': False, 'error': 'Not authenticated'})
 
     try:
-        match = PoolLeagueMatch.objects.get(id=match_id)
+        participant_id = UUID(raw_participant_id)  # ✅ convert to UUID
+        match = PoolLeagueMatch.objects.get(id=int(match_id))  # still int
         submitting_player = PoolLeaguePlayer.objects.get(event=match.event, participant_id=participant_id)
-        winner = PoolLeaguePlayer.objects.get(id=winner_id)
-    except PoolLeagueMatch.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Match not found'})
-    except PoolLeaguePlayer.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Invalid player'})
+    except (PoolLeagueMatch.DoesNotExist, PoolLeaguePlayer.DoesNotExist, ValueError) as e:
+        return JsonResponse({'success': False, 'error': f'Invalid match or player: {e}'})
+
+    if match.completed:
+        return JsonResponse({'success': False, 'error': 'Match already completed'})
 
     if submitting_player != match.player1 and submitting_player != match.player2:
         return JsonResponse({'success': False, 'error': 'Not authorized to submit this result'})
 
-    match.winner = winner
+    opponent = match.player2 if submitting_player == match.player1 else match.player1
+
+    if result == "win":
+        match.winner = submitting_player
+        submitting_player.wins += 1
+        opponent.losses += 1
+    elif result == "loss":
+        match.winner = opponent
+        opponent.wins += 1
+        submitting_player.losses += 1
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid result'})
+
     match.completed = True
     match.save()
-
-    winner.wins += 1
-    winner.save()
+    submitting_player.save()
+    opponent.save()
 
     if is_pool_league_complete(match.event):
         finalize_pool_league(match.event)
@@ -572,52 +593,115 @@ def killer_submit_turn(request, event_id):
     killer = get_object_or_404(Killer, event=event)
     players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
     current_player = killer.get_current_player()
-
     action = request.POST.get('action')
 
+    # Handle forced repeat shot logic
+    if killer.repeat_shot_forced and killer.previous_player:
+        repeat_shooter = killer.previous_player
+        forcer_index = (killer.current_player_index + 1) % players.count()
+        forcing_player = players[forcer_index]
+
+        if action == 'add_life':
+            # Repeat player potted the black
+            repeat_shooter.lives += 1
+            repeat_shooter.save()
+
+            forcing_player.lives -= 1
+            if forcing_player.lives <= 0:
+                forcing_player.eliminated = True
+                forcing_player.save()
+                handle_killer_elimination(killer, forcing_player)
+                killer.check_game_complete()
+                killer.advance_turn()  # Skip to next player
+            else:
+                forcing_player.save()
+                # It is now the forcing player's turn
+                # so we do NOT advance turn again
+
+            killer.repeat_shot_pending = False
+            killer.repeat_shot_forced = False
+            killer.previous_player = None
+
+        elif action == 'successful_pot':
+            # Same as before – force causes forcer to lose life
+            forcing_player.lives -= 1
+            if forcing_player.lives <= 0:
+                forcing_player.eliminated = True
+                forcing_player.save()
+                handle_killer_elimination(killer, forcing_player)
+                killer.check_game_complete()
+                killer.advance_turn()
+            else:
+                forcing_player.save()
+
+            killer.repeat_shot_pending = False
+            killer.repeat_shot_forced = False
+            killer.previous_player = None
+
+        else:
+            # Miss again → repeat_shooter loses another life
+            repeat_shooter.lives -= 1
+            if repeat_shooter.lives <= 0:
+                repeat_shooter.eliminated = True
+                repeat_shooter.save()
+                handle_killer_elimination(killer, repeat_shooter)
+                killer.check_game_complete()
+            else:
+                repeat_shooter.save()
+
+            # Reset repeat logic either way
+            killer.repeat_shot_pending = False
+            killer.repeat_shot_forced = False
+            killer.previous_player = None
+            # Do NOT advance the turn – it is already on the forcing player
+
+        killer.save()
+        return redirect('killer_game', event_id=event.id)
+
+    # Regular flow
     if action == 'successful_pot':
         killer.previous_player = current_player
         killer.repeat_shot_pending = False
         killer.repeat_shot_forced = False
         killer.advance_turn()
 
-    elif action == 'lose_one_life':
-        current_player.lives -= 1
+    elif action in ['lose_one_life', 'lose_two_lives']:
+        lives_lost = 1 if action == 'lose_one_life' else 2
+        current_player.lives -= lives_lost
         if current_player.lives <= 0:
             current_player.eliminated = True
             current_player.save()
             handle_killer_elimination(killer, current_player)
             killer.check_game_complete()
+            killer.previous_player = None
+            killer.repeat_shot_pending = False
+            killer.repeat_shot_forced = False
         else:
             current_player.save()
+            killer.previous_player = current_player
+            killer.repeat_shot_pending = True
+            killer.repeat_shot_forced = False
 
-        killer.previous_player = current_player
-        killer.advance_turn()
-
-
-    elif action == 'lose_two_lives':
-        current_player.lives -= 2
-        if current_player.lives <= 0:
-            current_player.eliminated = True
-            current_player.save()
-            handle_killer_elimination(killer, current_player)
-            killer.check_game_complete()
-        else:
-            current_player.save()
-
-        killer.previous_player = current_player
         killer.advance_turn()
 
     elif action == 'add_life':
         current_player.lives += 1
         current_player.save()
         killer.previous_player = current_player
+        killer.repeat_shot_pending = False
+        killer.repeat_shot_forced = False
         killer.advance_turn()
 
+
     elif action == 'repeat_previous':
-        killer.repeat_shot_pending = True
-        killer.repeat_shot_forced = True
-        killer.current_player_index = (killer.current_player_index - 1) % players.count()
+        if killer.previous_player and not killer.previous_player.eliminated:
+            killer.repeat_shot_pending = True
+            killer.repeat_shot_forced = True
+        else:
+            messages.warning(request, "Cannot force a player who was eliminated.")
+
+            killer.repeat_shot_forced = False
+            killer.repeat_shot_pending = False
 
     killer.save()
     return redirect('killer_game', event_id=event.id)

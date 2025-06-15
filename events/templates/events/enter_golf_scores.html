@@ -1,3 +1,9 @@
+{% extends "base.html" %}
+{% load static %}
+{% load golf_extras %}
+
+{% block content %}
+
 {% if group.id %}
 <script>
   document.body.dataset.pollingUrl = "{% url 'golf_scorecard_state' group.id %}";
@@ -230,6 +236,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-
 
 {% endblock %}
