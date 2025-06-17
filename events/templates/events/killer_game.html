@@ -40,7 +40,7 @@
     <!-- Action Buttons -->
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
-
+{% if request.user == event.host.user or request.user.is_superuser %}
     <form method="post" action="{% url 'killer_submit_turn' event.id %}">
       {% csrf_token %}
 
@@ -67,18 +67,15 @@
           🎱 Add Life
         </button>
         <button name="action" value="move_back" class="btn btn-secondary btn-sm w-50 rounded-pill">
-          ⬅️ Move Turn Back
+          ⬅️ Previous
         </button>
-      </div>
-
-      <!-- Row 4: Move Turn Forward -->
-      <div class="d-grid">
         <button name="action" value="move_forward" class="btn btn-secondary btn-sm rounded-pill">
-          ➡️ Move Turn Forward
+          ➡️ Next
         </button>
       </div>
-    </form>
 
+    </form>
+{% endif %}
   </div>
 {% endif %}
 

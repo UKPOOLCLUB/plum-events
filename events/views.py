@@ -590,6 +590,10 @@ def killer_game_view(request, event_id):
 @require_POST
 def killer_submit_turn(request, event_id):
     event = get_object_or_404(Event, id=event_id)
+
+    if request.user != event.host.user and not request.user.is_superuser:
+        return HttpResponseForbidden("Only the host can update the Killer game.")
+
     killer = get_object_or_404(Killer, event=event)
     players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
     current_player = killer.get_current_player()
@@ -631,7 +635,7 @@ def killer_submit_turn(request, event_id):
         killer.is_complete = True
 
     killer.save()
-    return redirect('killer_game_view', event_id=event.id)
+    return redirect('killer_game', event_id=event.id)
 
 def handle_killer_elimination(killer, player):
     total_players = KillerPlayer.objects.filter(killer_game=killer).count()
