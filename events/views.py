@@ -591,48 +591,43 @@ def killer_game_view(request, event_id):
 def killer_submit_turn(request, event_id):
     event = get_object_or_404(Event, id=event_id)
 
-    if request.user != event.host.user and not request.user.is_superuser:
+    if request.user != event.host and not request.user.is_superuser:
         return HttpResponseForbidden("Only the host can update the Killer game.")
 
-    killer = get_object_or_404(Killer, event=event)
-    players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
+    killer = get_object_or_404(Killer, event=event_id)
     current_player = killer.get_current_player()
     action = request.POST.get('action')
 
+    advance_turn = True  # Only advance if not eliminated
+
     if action == "successful_pot":
-        killer.current_player_index = (killer.current_player_index + 1) % players.count()
+        pass  # Just advance
     elif action == "lose_one_life":
         current_player.lives -= 1
         current_player.save()
         if current_player.lives <= 0 and not current_player.eliminated:
             current_player.eliminated = True
-            current_player.finish_position = killer.get_next_finish_position()
-            current_player.save()
-        killer.current_player_index = (killer.current_player_index + 1) % players.count()
+            handle_killer_elimination(killer, current_player)
+            advance_turn = False
     elif action == "lose_two_lives":
         current_player.lives -= 2
         current_player.save()
         if current_player.lives <= 0 and not current_player.eliminated:
             current_player.eliminated = True
-            current_player.finish_position = killer.get_next_finish_position()
-            current_player.save()
-        killer.current_player_index = (killer.current_player_index + 1) % players.count()
+            handle_killer_elimination(killer, current_player)
+            advance_turn = False
     elif action == "add_life":
         current_player.lives += 1
         current_player.save()
     elif action == "move_back":
-        killer.current_player_index = (killer.current_player_index - 1) % players.count()
+        killer.move_back()
+        advance_turn = False
     elif action == "move_forward":
-        killer.current_player_index = (killer.current_player_index + 1) % players.count()
+        killer.advance_turn()
+        advance_turn = False
 
-    # End game check
-    remaining_players = [p for p in players if not p.eliminated]
-    if len(remaining_players) == 1 and not killer.is_complete:
-        winner = remaining_players[0]
-        winner.finish_position = 1
-        winner.points_awarded = event.points_for_win or 50
-        winner.save()
-        killer.is_complete = True
+    if advance_turn:
+        killer.advance_turn()
 
     killer.save()
     return redirect('killer_game', event_id=event.id)

@@ -106,6 +106,7 @@ def start_event(request, event_code):
 
     if request.method == 'POST':
         event.has_started = True
+        event.host = request.user  # ✅ Set host here
         event.save()
 
         participants = list(event.participants.all())
