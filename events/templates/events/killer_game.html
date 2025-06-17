@@ -41,16 +41,6 @@
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
 
-    {% if killer.repeat_shot_forced and killer.previous_player %}
-      <div class="alert alert-warning text-center py-2 mb-2">
-        🔁 <strong>{{ killer.previous_player.participant.username }}</strong> must repeat their shot!
-      </div>
-    {% elif killer.repeat_shot_pending and killer.previous_player and not killer.previous_player.eliminated %}
-      <div class="alert alert-info text-center py-2 mb-2">
-        🎯 <strong>{{ current_player.participant.username }}</strong>, you can force {{ killer.previous_player.participant.username }} to play again!
-      </div>
-    {% endif %}
-
     <form method="post" action="{% url 'killer_submit_turn' event.id %}">
       {% csrf_token %}
 
@@ -71,20 +61,24 @@
         </button>
       </div>
 
-      <!-- Row 3: Add Life & Repeat Previous -->
-      <div class="d-flex gap-2">
+      <!-- Row 3: Add Life & Manual Navigation -->
+      <div class="d-flex gap-2 mb-2">
         <button name="action" value="add_life" class="btn btn-warning btn-sm w-50 rounded-pill">
           🎱 Add Life
         </button>
-
-        {% if killer.repeat_shot_pending and not killer.repeat_shot_forced and killer.previous_player and not killer.previous_player.eliminated %}
-          <button name="action" value="repeat_previous" class="btn btn-secondary btn-sm w-50 rounded-pill">
-            🔁 Force Previous Again
-          </button>
-        {% endif %}
+        <button name="action" value="move_back" class="btn btn-secondary btn-sm w-50 rounded-pill">
+          ⬅️ Move Turn Back
+        </button>
       </div>
 
+      <!-- Row 4: Move Turn Forward -->
+      <div class="d-grid">
+        <button name="action" value="move_forward" class="btn btn-secondary btn-sm rounded-pill">
+          ➡️ Move Turn Forward
+        </button>
+      </div>
     </form>
+
   </div>
 {% endif %}
 
@@ -224,7 +218,65 @@
 .btn {
   min-width: 140px;
 }
-
 </style>
+
+<script>
+  async function pollKillerGameState() {
+    const url = document.body.dataset.pollingUrl;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Poll failed");
+      const data = await response.json();
+      updateKillerGameUI(data);
+    } catch (err) {
+      console.error("Polling error:", err);
+    }
+  }
+
+  function updateKillerGameUI(data) {
+    const banner = document.querySelector(".alert-primary, .alert-success");
+    if (data.is_complete) {
+      banner.classList.remove("alert-primary");
+      banner.classList.add("alert-success");
+      banner.innerHTML = `🏆 <strong>${data.players.find(p => p.finish_position === 1)?.username} wins!</strong> Game over.`;
+    } else {
+      banner.classList.remove("alert-success");
+      banner.classList.add("alert-primary");
+      banner.innerHTML = `<strong>It's ${data.current_player}'s turn</strong>`;
+    }
+
+    // Update player table
+    const rows = document.querySelectorAll("tbody tr");
+    rows.forEach((row, index) => {
+      const player = data.players[index];
+      row.classList.remove("killer-current", "killer-eliminated", "text-accent");
+      row.children[0].innerHTML = player.finish_position === 1
+        ? `🏆 <strong>${player.username}</strong><br><small class="text-success">(1st – ${player.points_awarded} pts)</small>`
+        : player.username;
+
+      row.children[1].innerHTML = player.eliminated
+        ? `Out (${ordinal(player.finish_position)})`
+        : player.is_current ? "🎯 Your Turn" : "—";
+
+      row.children[2].innerHTML = `<span class="badge bg-secondary px-2 py-1">${player.lives} 🧡</span>`;
+
+      if (player.eliminated) {
+        row.classList.add("killer-eliminated");
+      } else if (player.is_current) {
+        row.classList.add("killer-current", "text-accent");
+      }
+    });
+  }
+
+  function ordinal(n) {
+    if (!n) return "";
+    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  // Start polling every 5 seconds
+  setInterval(pollKillerGameState, 5000);
+</script>
+</div>
 
 {% endblock %}
