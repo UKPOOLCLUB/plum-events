@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import Participant
+from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 import uuid
 
@@ -22,13 +23,20 @@ GAME_CHOICES = [
 
 class Event(models.Model):
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=8, unique=True)  # e.g. 4–8 letter join code
+    code = models.CharField(max_length=8, unique=True)
     date = models.DateField()
     selected_games = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     has_started = models.BooleanField(default=False)
-
     edarts_completed = models.BooleanField(default=False)
+
+    host = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='hosted_events',
+        null=True,  # ✅ temporarily allow null so we don’t break existing events
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -226,21 +234,34 @@ class Killer(models.Model):
     is_complete = models.BooleanField(default=False)  # ✅ NEW FIELD
 
     def get_current_player(self):
+        active = self.get_active_players()
         if self.repeat_shot_forced and self.previous_player:
             return self.previous_player
-
-        players = list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
-        if not players:
+        if not active:
             return None
-        index = self.current_player_index % len(players)
-        return players[index]
+        return active[self.current_player_index % len(active)]
+
+    def get_active_players(self):
+        return list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
 
     def advance_turn(self):
-        players = list(self.killerplayer_set.filter(eliminated=False).order_by('turn_order'))
-        if not players:
+        active_players = self.get_active_players()
+        if not active_players:
             return
-        self.current_player_index = (self.current_player_index + 1) % len(players)
+        self.current_player_index = (self.current_player_index + 1) % len(active_players)
         self.save()
+
+    def move_back(self):
+        active_players = self.get_active_players()
+        if not active_players:
+            return
+        self.current_player_index = (self.current_player_index - 1) % len(active_players)
+        self.save()
+
+    def get_next_finish_position(self):
+        total_players = self.killerplayer_set.count()
+        eliminated_count = self.killerplayer_set.filter(eliminated=True).count()
+        return total_players - eliminated_count
 
     def check_game_complete(self):
         active = self.killerplayer_set.filter(eliminated=False)

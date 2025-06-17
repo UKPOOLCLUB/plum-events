@@ -37,45 +37,43 @@
 
   <div class="row gx-2 gy-3">
 
-    <!-- Action Buttons -->
+<!-- Action Buttons -->
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
-{% if request.user == event.host.user or request.user.is_superuser %}
-    <form method="post" action="{% url 'killer_submit_turn' event.id %}">
-      {% csrf_token %}
+    {% if request.user == event.host or request.user.is_superuser %}
+      <form method="post" action="{% url 'killer_submit_turn' event.id %}">
+  {% csrf_token %}
+  <div class="killer-action-grid text-center mb-2">
 
-      <!-- Row 1: Successful Pot -->
-      <div class="d-grid mb-2">
-        <button name="action" value="successful_pot" class="btn btn-success btn-sm text-center rounded-pill">
-          ✅ Successful Pot
-        </button>
-      </div>
+  <button name="action" value="successful_pot" class="btn btn-success killer-action-btn">
+    ✅ Pot
+  </button>
 
-      <!-- Row 2: Lose 1 & 2 Lives -->
-      <div class="d-flex gap-2 mb-2">
-        <button name="action" value="lose_one_life" class="btn btn-danger btn-sm w-50 rounded-pill">
-          ❌ Lose 1 Life
-        </button>
-        <button name="action" value="lose_two_lives" class="btn btn-danger btn-sm w-50 rounded-pill">
-          ❌❌ Lose 2 Lives
-        </button>
-      </div>
+  <button name="action" value="add_life" class="btn btn-warning killer-action-btn">
+    🎱 Add Life
+  </button>
 
-      <!-- Row 3: Add Life & Manual Navigation -->
-      <div class="d-flex gap-2 mb-2">
-        <button name="action" value="add_life" class="btn btn-warning btn-sm w-50 rounded-pill">
-          🎱 Add Life
-        </button>
-        <button name="action" value="move_back" class="btn btn-secondary btn-sm w-50 rounded-pill">
-          ⬅️ Previous
-        </button>
-        <button name="action" value="move_forward" class="btn btn-secondary btn-sm rounded-pill">
-          ➡️ Next
-        </button>
-      </div>
+  <button name="action" value="lose_one_life" class="btn btn-danger killer-action-btn">
+    ❌ Lose 1
+  </button>
 
-    </form>
-{% endif %}
+  <button name="action" value="lose_two_lives" class="btn btn-danger killer-action-btn">
+    ❌❌ Lose 2
+  </button>
+
+  <button name="action" value="move_back" class="btn btn-secondary killer-action-btn">
+    ⬅️ Back
+  </button>
+
+  <button name="action" value="move_forward" class="btn btn-secondary killer-action-btn">
+    ➡️ Next
+  </button>
+
+</div>
+
+</form>
+
+    {% endif %}
   </div>
 {% endif %}
 
@@ -152,30 +150,34 @@
 <style>
 .killer-action-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  max-width: 280px;
-  margin: 0 auto 1.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  max-width: 360px;
+  margin: 0 auto 1rem;
 }
 
 .killer-action-btn {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  font-size: 1.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.5rem;
-  background-color: #1e1e1e;
-  color: #fff;
-  border: 2px solid #333;
-  transition: all 0.2s ease-in-out;
+  height: 36px;
+  font-size: 1rem;
+  line-height: 1.1;
+  padding: 0.3rem 0.2rem;
+  white-space: normal;
+  border-radius: 0.75rem;
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.05);
 }
 
 .killer-action-btn:hover {
-  background-color: #333;
   transform: scale(1.05);
 }
+
+@media (max-width: 420px) {
+  .killer-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Current player's row highlight */
 .killer-current {
   background-color: rgba(255, 255, 255, 0.05);
