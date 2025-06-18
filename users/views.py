@@ -7,8 +7,9 @@ from django.utils.decorators import method_decorator
 from collections import defaultdict
 from pprint import pprint
 from events.utils import create_balanced_groups
-from events.models import MiniGolfConfig, MiniGolfGroup, KillerConfig, PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
-from events.models import Killer, KillerPlayer
+from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
+from events.models import Killer, KillerPlayer, KillerConfig
+from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
 from django.db.models import Sum, Count
 from random import shuffle
 
@@ -118,7 +119,7 @@ def start_event(request, event_code):
 
         # ✅ Mini Golf Setup
         if "mini_golf" in event.selected_games:
-            MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 9})
+            MiniGolfConfig.objects.get_or_create(event=event, defaults={"holes": 18})
             MiniGolfGroup.objects.filter(event=event).delete()
 
             for i, group_players in enumerate(group_list, start=1):
