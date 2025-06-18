@@ -40,21 +40,42 @@ def enter_golf_scores(request, group_id):
         except Participant.DoesNotExist:
             pass
 
-    totals = {}
+    player_metadata = []
+
     for player in players:
         try:
             player_scores = scores.get(str(player.id), {})
-            totals[player.id] = sum(int(v) for v in player_scores.values())
-        except Exception as e:
-            totals[player.id] = 0
+            total = sum(int(v) for v in player_scores.values())
+        except Exception:
+            total = 0
+
+        result = {
+            'id': player.id,
+            'username': player.username,
+            'is_scorekeeper': player == group.scorekeeper,
+            'total': total,
+        }
+
+        if scorecard.submitted:
+            kept = player.kept_scores.get("mini_golf", {})
+            result["position"] = kept.get("position")
+            result["points"] = kept.get("points")
+
+        player_metadata.append(result)
+
+    # ✅ Now sort once, after the loop
+    if scorecard.submitted:
+        player_metadata.sort(key=lambda x: (x.get("position") or 999, x["username"]))
+    else:
+        player_metadata.sort(key=lambda x: x["username"])
 
     return render(request, 'events/enter_golf_scores.html', {
         'group': group,
-        'players': players,
+        'players': player_metadata,  # ✅ updated list
         'holes': list(range(1, holes + 1)),
         'can_edit': can_edit,
         'scorekeeper': group.scorekeeper,
-        'totals': totals,
+        'totals': {},  # unused now, could be removed entirely
         'event': event,
         'scores': scores,
         'scorecard': scorecard,
@@ -162,6 +183,10 @@ def submit_golf_scorecard(request, group_id):
             points = config.points_second
         elif i == 2:
             points = config.points_third
+        elif i == 3:
+            points = config.points_fourth
+        elif i == 4:
+            points = config.points_fifth
         else:
             points = 0
 
@@ -340,27 +365,35 @@ def pool_league_view(request, event_id):
     return render(request, "events/pool_league_view.html", context)
 
 
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.template.loader import render_to_string
+from uuid import UUID
+from .models import PoolLeagueMatch, PoolLeaguePlayer, PoolLeagueConfig
+from django.db.models import Q
+
 @require_POST
 def submit_pool_match_result(request):
     match_id = request.POST.get('match_id')
     result = request.POST.get('result')  # "win" or "loss"
     raw_participant_id = request.POST.get('player_id') or request.session.get('participant_id')
 
-    if not raw_participant_id:
-        return JsonResponse({'success': False, 'error': 'Not authenticated'})
+    if not (match_id and result and raw_participant_id):
+        return HttpResponseBadRequest("Missing required fields.")
 
     try:
-        participant_id = UUID(raw_participant_id)  # ✅ convert to UUID
-        match = PoolLeagueMatch.objects.get(id=int(match_id))  # still int
-        submitting_player = PoolLeaguePlayer.objects.get(event=match.event, participant_id=participant_id)
-    except (PoolLeagueMatch.DoesNotExist, PoolLeaguePlayer.DoesNotExist, ValueError) as e:
-        return JsonResponse({'success': False, 'error': f'Invalid match or player: {e}'})
+        participant_id = UUID(raw_participant_id)
+        match = PoolLeagueMatch.objects.get(id=int(match_id))
+        submitting_player = PoolLeaguePlayer.objects.get(event=match.event, participant__id=participant_id)
+    except (ValueError, PoolLeagueMatch.DoesNotExist, PoolLeaguePlayer.DoesNotExist):
+        return HttpResponseBadRequest("Invalid match or player.")
 
     if match.completed:
-        return JsonResponse({'success': False, 'error': 'Match already completed'})
+        return HttpResponseBadRequest("Match already completed.")
 
     if submitting_player != match.player1 and submitting_player != match.player2:
-        return JsonResponse({'success': False, 'error': 'Not authorized to submit this result'})
+        return HttpResponseForbidden("You are not part of this match.")
 
     opponent = match.player2 if submitting_player == match.player1 else match.player1
 
@@ -373,18 +406,38 @@ def submit_pool_match_result(request):
         opponent.wins += 1
         submitting_player.losses += 1
     else:
-        return JsonResponse({'success': False, 'error': 'Invalid result'})
+        return HttpResponseBadRequest("Invalid result.")
 
     match.completed = True
     match.save()
     submitting_player.save()
     opponent.save()
 
-    if is_pool_league_complete(match.event):
-        finalize_pool_league(match.event)
+    # Check if league is now complete
+    league_completed = not PoolLeagueMatch.objects.filter(event=match.event, completed=False).exists()
 
-    return JsonResponse({'success': True})
+    # Get updated data for re-render
+    players = PoolLeaguePlayer.objects.filter(event=match.event)
 
+    # Only include matches that involve the submitting player, and annotate opponent
+    matches = PoolLeagueMatch.objects.filter(
+        event=match.event
+    ).filter(
+        Q(player1=submitting_player) | Q(player2=submitting_player)
+    )
+
+    for m in matches:
+        m.opponent = m.player2 if m.player1 == submitting_player else m.player1
+
+    html = render_to_string("events/partials/pool_league_update.html", {
+        "matches": matches,
+        "all_players": players,
+        "current_player": submitting_player,
+        "event": match.event,
+        "league_completed": league_completed,
+    })
+
+    return HttpResponse(html)
 
 def is_pool_league_complete(event):
     return not PoolLeagueMatch.objects.filter(event=event, completed=False).exists()

@@ -2,58 +2,10 @@
 {% load pool_match_filters %}
 
 {% block content %}
-
 <style>
   .league-header {
     color: #00FFAB;
     text-shadow: 0 0 6px #00FFAB;
-  }
-
-  .matrix-table th,
-  .matrix-table td {
-    vertical-align: middle;
-  }
-
-  .matrix-table .text-success,
-  .matrix-table .text-danger {
-    font-size: 1.2rem;
-  }
-
-  .clickable-result-cell {
-    cursor: pointer;
-    border: 2px dashed #FFD700;
-    background-color: #222;
-    transition: background-color 0.2s ease;
-  }
-
-  .clickable-result-cell:hover {
-    background-color: #333;
-  }
-
-  .matrix-table th:first-child,
-  .matrix-table td:first-child {
-    font-weight: bold;
-    color: #00FFAB;
-    white-space: nowrap;
-  }
-
-  .matrix-table td:last-child {
-    background-color: rgba(0, 255, 171, 0.05);
-    font-weight: bold;
-  }
-
-  .modal-content {
-    background-color: #1E1E2F;
-    border: 1px solid #00FFAB;
-    color: #fff;
-  }
-
-  .modal-title {
-    color: #00FFAB;
-  }
-
-  .btn-close {
-    filter: invert(1);
   }
 </style>
 
@@ -62,158 +14,58 @@
 </script>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
-    <div>
-        <h2 class="mb-0 league-header">🎱 Pool League Match Grid</h2>
-    </div>
-    <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
-        <i class="bi bi-bar-chart-fill fs-1"></i>
-    </a>
+  <h2 class="mb-0 league-header">🎱 Pool League Match Grid</h2>
+  <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
+    <i class="bi bi-bar-chart-fill fs-1"></i>
+  </a>
 </div>
 
-{% if league_completed %}
-  <h3 class="text-center text-success mb-3">🏁 Final Standings</h3>
-{% else %}
-  <h3 class="text-center text-info mb-3">📊 Current League Standings</h3>
-{% endif %}
-
-<table class="table table-dark table-bordered text-center">
-  <thead>
-  <tr>
-    <th>Rank</th>
-    <th>Player</th>
-    <th>Played</th>
-    <th>Wins</th>
-    <th>Points</th>
-  </tr>
-</thead>
-<tbody>
-  {% for player in all_players|dictsortreversed:"wins" %}
-    <tr class="{% if player == current_player %}table-success{% endif %}">
-      <td>{{ forloop.counter }}</td>
-      <td>{{ player.participant.username }}</td>
-      <td>{{ player.wins|add:player.losses|default:0 }}</td>  {# Played = wins + losses #}
-      <td>{{ player.wins }}</td>
-      <td>{{ player.points_awarded|default:"–" }}</td>
-    </tr>
-  {% endfor %}
-</tbody>
-</table>
-
-<h4 class="mt-5 mb-3 text-accent">🎯 Your Fixtures</h4>
-
-<table class="table table-striped table-bordered text-center">
-  <thead>
-    <tr>
-      <th>Opponent</th>
-      <th>Status</th>
-      <th>Submit Result</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for match in matches %}
-      <tr>
-        <td>{{ match.opponent.participant.username }}</td>
-        <td>
-          {% if match.completed %}
-            {% if match.winner == current_player %}<span class="text-success">✅ Win</span>
-            {% else %}<span class="text-danger">❌ Loss</span>{% endif %}
-          {% else %}
-            <span class="text-warning">Pending</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if not match.completed %}
-            <form method="post" action="{% url 'submit_pool_match_result' %}">
-              {% csrf_token %}
-              <input type="hidden" name="match_id" value="{{ match.id }}">
-              <form method="post" action="{% url 'submit_pool_match_result' %}" class="d-flex justify-content-around">
-                  {% csrf_token %}
-                  <input type="hidden" name="match_id" value="{{ match.id }}">
-                  <input type="hidden" name="player_id" value="{{ current_player.participant.id }}">
-                  <button name="result" value="win" class="btn btn-success btn-sm">✅ I Won</button>
-                  <button name="result" value="loss" class="btn btn-danger btn-sm">❌ I Lost</button>
-                </form>
-
-            </form>
-          {% else %}
-            –
-          {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Result Submission Modal -->
-<div class="modal fade" id="submitResultModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Submit Result</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center">
-                <p id="matchup" class="mb-3"></p>
-                <button class="btn btn-success m-2" id="btn-player1-win"></button>
-                <button class="btn btn-primary m-2" id="btn-player2-win"></button>
-            </div>
-        </div>
-    </div>
+<div id="pool-league-container">
+  {% include "events/partials/pool_league_update.html" %}
 </div>
 
 <script>
-document.querySelectorAll('.clickable-result-cell').forEach(cell => {
-    cell.addEventListener('click', () => {
-        const matchId = cell.dataset.matchId;
-        const p1 = cell.dataset.player1;
-        const p2 = cell.dataset.player2;
-        const p1Id = cell.dataset.player1Id;
-        const p2Id = cell.dataset.player2Id;
-
-        document.getElementById('matchup').textContent = `${p1} vs ${p2}`;
-        const btn1 = document.getElementById('btn-player1-win');
-        const btn2 = document.getElementById('btn-player2-win');
-
-        btn1.textContent = `${p1} wins`;
-        btn2.textContent = `${p2} wins`;
-
-        btn1.onclick = () => submitResult(matchId, p1Id);
-        btn2.onclick = () => submitResult(matchId, p2Id);
-
-        new bootstrap.Modal(document.getElementById('submitResultModal')).show();
-    });
-});
-
-function submitResult(matchId, winnerId) {
-    fetch("{% url 'submit_pool_match_result' %}", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `match_id=${matchId}&winner_id=${winnerId}`
-    }).then(res => res.json()).then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || "Error submitting result");
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
         }
-    });
-}
-</script>
+      }
+    }
+    return cookieValue;
+  }
 
-<script>
-  // Refresh every 5 seconds
-  setInterval(() => {
-    fetch("{% url 'pool_league_state' event.id %}")
-      .then(response => response.json())
-      .then(data => {
-        if (data.state_changed) {
-          location.reload();
-        }
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".submit-button").forEach(button => {
+      button.addEventListener("click", function () {
+        const form = this.closest("form");
+        const formData = new FormData(form);
+        const result = this.dataset.result;
+
+        formData.set("result", result);
+
+        fetch(form.action, {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        })
+          .then(res => res.text())
+          .then(html => {
+            document.getElementById("pool-league-container").innerHTML = html;
+          })
+          .catch(err => alert("Error submitting result"));
       });
-  }, 5000);
+    });
+  });
 </script>
+
 
 
 {% endblock %}
