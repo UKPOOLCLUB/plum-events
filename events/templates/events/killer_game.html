@@ -102,20 +102,20 @@
                   <td>
                     {% if killer.is_complete and player.finish_position == 1 %}
                       🏆 <strong>{{ player.participant.username }}</strong><br>
-                      <small class="text-success">(1st – {{ player.points_awarded }} pts)</small>
+
                     {% else %}
                       {{ player.participant.username }}
                     {% endif %}
                   </td>
-                  <td>
-                    {% if player.eliminated %}
-                      Out ({{ player.finish_position|ordinal }})
-                    {% elif player == current_player %}
-                      🎯 Your Turn
-                    {% else %}
-                      —
-                    {% endif %}
-                  </td>
+                    <td>
+                      {% if killer.is_complete %}
+                        {{ player.finish_position|ordinal }} – {{ player.points_awarded }} pts
+                      {% elif player == current_player %}
+                        🎯 Your Turn
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
                   <td>
                     <span class="badge bg-secondary px-2 py-1">{{ player.lives }} 🧡</span>
                   </td>
@@ -143,7 +143,6 @@
 /* Fade and dull eliminated players */
 .killer-eliminated {
   opacity: 0.5;
-  text-decoration: line-through;
 }
 </style>
 
@@ -187,7 +186,6 @@
 /* Eliminated player style */
 .killer-eliminated {
   opacity: 0.5;
-  text-decoration: line-through;
 }
 
 .btn-success {
@@ -244,27 +242,42 @@
       banner.innerHTML = `<strong>It's ${data.current_player}'s turn</strong>`;
     }
 
-    // Update player table
-    const rows = document.querySelectorAll("tbody tr");
-    rows.forEach((row, index) => {
-      const player = data.players[index];
-      row.classList.remove("killer-current", "killer-eliminated", "text-accent");
-      row.children[0].innerHTML = player.finish_position === 1
-        ? `🏆 <strong>${player.username}</strong><br><small class="text-success">(1st – ${player.points_awarded} pts)</small>`
-        : player.username;
+// Update player table
+const rows = document.querySelectorAll("tbody tr");
 
-      row.children[1].innerHTML = player.eliminated
-        ? `Out (${ordinal(player.finish_position)})`
-        : player.is_current ? "🎯 Your Turn" : "—";
+// Sort players by finish_position (ascending)
+const sortedPlayers = data.players.slice().sort((a, b) => a.finish_position - b.finish_position);
 
-      row.children[2].innerHTML = `<span class="badge bg-secondary px-2 py-1">${player.lives} 🧡</span>`;
+sortedPlayers.forEach((player, index) => {
+  const row = rows[index];
+  row.classList.remove("killer-current", "killer-eliminated", "text-accent");
 
-      if (player.eliminated) {
-        row.classList.add("killer-eliminated");
-      } else if (player.is_current) {
-        row.classList.add("killer-current", "text-accent");
-      }
-    });
+  // Player Name
+  row.children[0].innerHTML =
+    player.finish_position === 1
+      ? `🏆 <strong>${player.username}</strong><br><small class="text-success"></small>`
+      : player.username;
+
+  // Status Column
+  if (data.is_complete) {
+    row.children[1].innerHTML = `${ordinal(player.finish_position)} – ${player.points_awarded} pts`;
+  } else {
+    row.children[1].innerHTML = player.is_current
+      ? "🎯 Your Turn"
+      : "—";
+  }
+
+  // Lives Column
+  row.children[2].innerHTML = `<span class="badge bg-secondary px-2 py-1">${player.lives} 🧡</span>`;
+
+  // Row classes
+  if (!data.is_complete && player.eliminated) {
+    row.classList.add("killer-eliminated");
+  } else if (player.is_current) {
+    row.classList.add("killer-current", "text-accent");
+  }
+});
+
   }
 
   function ordinal(n) {
@@ -274,7 +287,7 @@
   }
 
   // Start polling every 5 seconds
-  setInterval(pollKillerGameState, 5000);
+  setInterval(pollKillerGameState, 3000);
 </script>
 </div>
 
