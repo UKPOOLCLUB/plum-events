@@ -203,12 +203,7 @@ def table_tennis_game_view(request, event_id):
         has_finished=True
     ).order_by('finish_rank')
 
-    active = TableTennisPlayer.objects.filter(
-        event=event,
-        has_finished=False
-    ).order_by('queue_position')
-
-    all_players = list(finished) + list(active)
+    all_players = list(finished) + list(players)
 
     # Determine if the game is complete (e.g., 6 players have finished)
     game_complete = finished.count() >= 6
@@ -276,6 +271,16 @@ def submit_table_tennis_result(request, event_id, winner_id):
     for i, player in enumerate(new_queue):
         player.queue_position = i
         player.save()
+
+    # ✅ If only one player remains and all others are finished, finish them
+    remaining = TableTennisPlayer.objects.filter(event=event, has_finished=False)
+    if remaining.count() == 1:
+        last_player = remaining.first()
+        finishers_count = TableTennisPlayer.objects.filter(event=event, has_finished=True).count()
+        last_player.has_finished = True
+        last_player.finish_rank = finishers_count + 1
+        last_player.points_awarded = config.get_points_for_rank(last_player.finish_rank)
+        last_player.save()
 
     return redirect('table_tennis_game_view', event_id=event.id)
 
@@ -634,11 +639,8 @@ def killer_submit_turn(request, event_id):
     return redirect('killer_game', event_id=event.id)
 
 def handle_killer_elimination(killer, player):
-    total_players = KillerPlayer.objects.filter(killer_game=killer).count()
-    eliminated_count = KillerPlayer.objects.filter(killer_game=killer, eliminated=True).count()
-
-    # Position is from the bottom up (e.g. 8th place = first eliminated in 8-player game)
-    finish_position = total_players - eliminated_count + 1
+    alive_players = KillerPlayer.objects.filter(killer_game=killer, eliminated=False).count()
+    finish_position = alive_players
 
     player.finish_position = finish_position
     player.points_awarded = killer.event.killer_config.get_points_for_rank(finish_position)

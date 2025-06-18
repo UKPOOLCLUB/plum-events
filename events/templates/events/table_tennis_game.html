@@ -72,13 +72,22 @@
       <tr>
         <td class="fw-semibold">{{ p.participant.username }}</td>
         <td>{{ p.games_won }}</td>
-        <td>
-          {% if p.has_finished %}
-            <span class="badge bg-secondary">Finished ({{ p.finish_rank }}<sup>{% if p.finish_rank == 1 %}st{% elif p.finish_rank == 2 %}nd{% elif p.finish_rank == 3 %}rd{% else %}th{% endif %}</sup>)</span>
-          {% else %}
-            <span class="badge bg-light text-dark">Waiting</span>
-          {% endif %}
-        </td>
+          <td>
+            {% if p.has_finished %}
+              <span class="badge bg-secondary">
+                Finished ({{ p.finish_rank }}<sup>{% if p.finish_rank == 1 %}st{% elif p.finish_rank == 2 %}nd{% elif p.finish_rank == 3 %}rd{% else %}th{% endif %}</sup>)
+              </span>
+            {% elif players|length > 0 and p.id == players.0.id %}
+              <span class="badge bg-warning text-dark">Playing</span>
+            {% elif players|length > 1 and p.id == players.1.id %}
+              <span class="badge bg-warning text-dark">Playing</span>
+            {% elif players|length > 2 and p.id == players.2.id %}
+              <span class="badge bg-info text-dark">Up Next</span>
+            {% else %}
+              <span class="badge bg-light text-dark">Waiting</span>
+            {% endif %}
+          </td>
+
         <td>{{ p.points_awarded }}</td>
       </tr>
       {% endfor %}
