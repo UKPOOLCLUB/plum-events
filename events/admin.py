@@ -25,7 +25,7 @@ class EventAdmin(admin.ModelAdmin):
 
 @admin.register(MiniGolfConfig)
 class MiniGolfConfigAdmin(admin.ModelAdmin):
-    list_display = ("event", "holes", "group_size_min", "group_size_max", "points_first", "overall_bonus")
+    list_display = ("event", "holes", "group_size_min", "group_size_max", "points_first")
     search_fields = ("event__name",)
 
 @admin.register(MiniGolfScorecard)

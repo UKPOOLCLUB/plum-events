@@ -43,11 +43,13 @@
         {% for hole in holes|slice:":9" %}
         <td>
           <input type="number" class="score-input"
-                 data-group="{{ group.id }}"
-                 data-username="{{ player.username }}"
-                 data-hole="{{ hole }}"
-                 min="1" max="6"
-                 value="{{ scores|get_item:player.username|get_item:hole }}">
+           data-group="{{ group.id }}"
+           data-username="{{ player.username }}"
+           data-player-id="{{ player.id }}"
+           data-hole="{{ hole }}"
+           min="1" max="6"
+           value="{{ scores|get_item:player.username|get_item:hole }}"
+
         </td>
         {% endfor %}
         <td id="front9_{{ player.username }}"><strong>0</strong></td>
@@ -76,11 +78,13 @@
         {% for hole in holes|slice:"9:" %}
         <td>
           <input type="number" class="score-input"
-                 data-group="{{ group.id }}"
-                 data-username="{{ player.username }}"
-                 data-hole="{{ hole }}"
-                 min="1" max="6"
-                 value="{{ scores|get_item:player.username|get_item:hole }}">
+           data-group="{{ group.id }}"
+           data-username="{{ player.username }}"
+           data-player-id="{{ player.id }}"
+           data-hole="{{ hole }}"
+           min="1" max="6"
+           value="{{ scores|get_item:player.username|get_item:hole }}"
+
         </td>
         {% endfor %}
         <td id="back9_{{ player.username }}"><strong>0</strong></td>
@@ -133,15 +137,18 @@
 <!-- Input Styling -->
 <style>
 .score-input {
-  width: 100%;
-  max-width: 60px;
-  font-weight: bold;
+  width: 2.2rem;
+  height: 2.2rem;
   font-size: 1rem;
   text-align: center;
-  padding: 4px;
-  margin: auto;
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
+  border-radius: 0.3rem;
+  border: 1px solid #ccc;
   box-sizing: border-box;
 }
+
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -159,12 +166,48 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalHoles = {{ holes|length }};
     const expectedEntries = totalHoles * {{ players|length }};
     const form = document.getElementById('auto-submit-form');
-    const modal = new bootstrap.Modal(document.getElementById('submitModal'));
+    const modalEl = document.getElementById('submitModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const scorecardSubmitted = {{ scorecard.submitted|yesno:"true,false" }};
+    let pollingInterval = null;
+
+    function stopPolling() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+        }
+    }
+
+    function startPolling() {
+        const pollingUrl = document.body.dataset.pollingUrl;
+        if (!pollingUrl || scorecardSubmitted) return;
+
+        pollingInterval = setInterval(() => {
+            const filled = Array.from(inputs).filter(i => i.value !== '').length;
+
+            if (filled === expectedEntries) {
+                stopPolling();
+                modal.show();
+                return;
+            }
+
+            fetch(pollingUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.submitted) {
+                        document.querySelectorAll('.score-input').forEach(input => {
+                            input.setAttribute('disabled', 'disabled');
+                        });
+                        stopPolling();
+                    }
+                })
+                .catch(err => console.error("Polling error:", err));
+        }, 3000);
+    }
 
     function updateAndSave(input) {
         updateTotals();
         autoSave(input);
-        checkCompletionAndPrompt();
     }
 
     function updateTotals() {
@@ -172,7 +215,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         inputs.forEach(input => {
             const username = input.dataset.username;
-            const hole = parseInt(input.dataset.hole);
+            const hole = Number(input.dataset.hole);
+            if (!hole || isNaN(hole)) return;
             const strokes = parseInt(input.value) || 0;
 
             if (!playerScores[username]) {
@@ -189,16 +233,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         for (const [username, totals] of Object.entries(playerScores)) {
-            document.getElementById(`front9_${username}`).innerHTML = `<strong>${totals.front9}</strong>`;
-            document.getElementById(`back9_${username}`)?.innerHTML = `<strong>${totals.back9}</strong>`;
-            document.getElementById(`total_${username}`).innerHTML = `<strong>${totals.total}</strong>`;
+            const f9 = document.getElementById(`front9_${username}`);
+            if (f9) f9.innerHTML = `<strong>${totals.front9}</strong>`;
+
+            const b9 = document.getElementById(`back9_${username}`);
+            if (b9) b9.innerHTML = `<strong>${totals.back9}</strong>`;
+
+            const tot = document.getElementById(`total_${username}`);
+            if (tot) tot.innerHTML = `<strong>${totals.total}</strong>`;
         }
     }
 
     function autoSave(input) {
         const data = new URLSearchParams();
         data.append('group_id', input.dataset.group);
-        data.append('username', input.dataset.username);
+        data.append('player_id', input.dataset.playerId);
         data.append('hole', input.dataset.hole);
         data.append('strokes', input.value);
 
@@ -217,23 +266,22 @@ document.addEventListener('DOMContentLoaded', function () {
           });
     }
 
-    function checkCompletionAndPrompt() {
-        const filled = Array.from(inputs).filter(i => i.value !== '').length;
-        if (filled === expectedEntries) {
-            // All scores filled in
-            modal.show();
-        }
+    if (scorecardSubmitted) {
+        inputs.forEach(input => input.setAttribute('disabled', 'disabled'));
+    } else {
+        inputs.forEach(input => {
+            input.addEventListener('input', () => updateAndSave(input));
+            input.addEventListener('change', () => updateAndSave(input));
+        });
+
+        document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
+            stopPolling();
+            form.submit();
+        });
+
+        updateTotals();
+        startPolling();  // only starts polling if scorecard not submitted
     }
-
-    inputs.forEach(input => {
-        input.addEventListener('change', () => updateAndSave(input));
-    });
-
-    updateTotals();
-
-    document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
-        form.submit();
-    });
 });
 </script>
 

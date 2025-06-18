@@ -25,7 +25,8 @@ def enter_golf_scores(request, group_id):
     holes = event.golf_config.holes
     players = group.players.all()
 
-    scorecard = MiniGolfScorecard.objects.filter(group=group).first()
+    # Ensure scorecard exists
+    scorecard, _ = MiniGolfScorecard.objects.get_or_create(group=group)
     scores = scorecard.data if scorecard and scorecard.data else {}
 
     participant_id = request.session.get('participant_id')
@@ -34,24 +35,18 @@ def enter_golf_scores(request, group_id):
     if participant_id:
         try:
             participant = Participant.objects.get(id=participant_id, event=event)
-            if participant == group.scorekeeper:
+            if participant == group.scorekeeper and not scorecard.submitted:
                 can_edit = True
-                if scorecard and scorecard.submitted:
-                    can_edit = False
         except Participant.DoesNotExist:
             pass
 
-    # Safe recalculation of totals
     totals = {}
     for player in players:
         try:
-            player_scores = scores.get(player.username, {})
-            totals[player.id] = sum(int(v) for v in player_scores.values() if v is not None)
+            player_scores = scores.get(str(player.id), {})
+            totals[player.id] = sum(int(v) for v in player_scores.values())
         except Exception as e:
-            logger.error("Error calculating total for player %s: %s", player.username, e)
             totals[player.id] = 0
-
-    logger.info("Loaded golf scorecard: group %s | players: %s | totals: %s", group_id, [p.username for p in players], totals)
 
     return render(request, 'events/enter_golf_scores.html', {
         'group': group,
@@ -61,24 +56,31 @@ def enter_golf_scores(request, group_id):
         'scorekeeper': group.scorekeeper,
         'totals': totals,
         'event': event,
-        'scores': scores
+        'scores': scores,
+        'scorecard': scorecard,
     })
+
 
 @csrf_exempt
 def save_golf_score(request):
+    print("SGS triggered")
     if request.method == "POST":
         try:
             group_id = int(request.POST.get("group_id"))
-            username = request.POST.get("username")
+            # player_id is a UUID string
+            player_id = request.POST.get("player_id")
             hole = str(request.POST.get("hole"))
             strokes = int(request.POST.get("strokes"))
 
             group = MiniGolfGroup.objects.get(id=group_id)
             event = group.event
-
-            player = Participant.objects.get(username=username, event=event)
+            player = Participant.objects.get(id=player_id, event=event)
+            username = player.username
 
             scorecard, _ = MiniGolfScorecard.objects.get_or_create(group=group)
+
+            if not scorecard.data:
+                scorecard.data = {}
 
             if username not in scorecard.data:
                 scorecard.data[username] = {}
@@ -90,7 +92,7 @@ def save_golf_score(request):
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)})
 
-    return JsonResponse({"success": False, "error": "Invalid request"})
+    return JsonResponse({"success": False, "error": "Invalid request method"})
 
 def generate_golf_groups(event):
     # Get all participants
@@ -124,7 +126,6 @@ def redirect_to_golf_group(request, event_code):
         return redirect('enter_golf_scores', group_id=group.id)
     except MiniGolfGroup.DoesNotExist:
         return HttpResponseForbidden("You are not assigned to a golf group.")
-
 
 
 def submit_golf_scorecard(request, group_id):
@@ -183,7 +184,7 @@ def golf_scorecard_state(request, group_id):
     scorecard = get_object_or_404(MiniGolfScorecard, group_id=group_id)
     return JsonResponse({
         'submitted': scorecard.submitted,
-        'last_updated': scorecard.updated_at.isoformat()
+        'last_updated': scorecard.last_updated.isoformat()
     })
 
 def table_tennis_game_view(request, event_id):

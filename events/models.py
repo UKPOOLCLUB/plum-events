@@ -69,18 +69,20 @@ class MiniGolfScorecard(models.Model):
 # New model in events/models.py
 class MiniGolfConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='golf_config')
-    holes = models.IntegerField(choices=[(9, "9 Holes"), (18, "18 Holes")], default=18)
+    holes = models.IntegerField(choices=[(18, "18 Holes"), (9, "9 Holes")], default=18)
     group_size_min = models.IntegerField(default=3)
     group_size_max = models.IntegerField(default=4)
     points_first = models.IntegerField(default=50)
-    points_second = models.IntegerField(default=25)
-    points_third = models.IntegerField(default=10)
-    overall_bonus = models.IntegerField(default=25)
+    points_second = models.IntegerField(default=35)
+    points_third = models.IntegerField(default=20)
+    points_fourth = models.IntegerField(default=10)
+    points_fifth = models.IntegerField(default=5)
+
 
 class PoolLeagueConfig(models.Model):
     event = models.OneToOneField('Event', on_delete=models.CASCADE, related_name='pool_league_config')
     matches_per_pair = models.IntegerField(default=1)
-    frames_per_match = models.IntegerField(default=3)
+    frames_per_match = models.IntegerField(default=1)
     points_per_frame = models.IntegerField(default=1)
     points_first = models.IntegerField(default=50)
     points_second = models.IntegerField(default=35)
