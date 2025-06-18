@@ -20,6 +20,32 @@
   </a>
 </div>
 
+{% if scorecard.submitted %}
+<h5 class="text-center mt-4">Total Score</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Player</th>
+        <th>Total Strokes</th>
+        <th>Position</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr {% if player.is_scorekeeper %}class="table-info"{% endif %}>
+        <td>{{ player.username }}</td>
+        <td><strong>{{ player.total }}</strong></td>
+        <td>{{ player.position|ordinal }}</td>
+        <td>{{ player.points }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <!-- Hidden form used for auto-submit -->
 <form id="auto-submit-form" method="post" action="{% url 'submit_golf_scorecard' group.id %}">
   {% csrf_token %}
@@ -96,24 +122,30 @@
 {% endif %}
 
 <!-- Total Score Table -->
+{% if not scorecard.submitted %}
 <h5 class="text-center">Total Score</h5>
 <div class="table-responsive mb-4">
-  <table class="table table-bordered text-center align-middle">
-    <thead class="table-light">
-      <tr>
-        <th>Player</th>
-        <th>Total Strokes</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for player in players %}
-      <tr {% if player == scorekeeper %}class="table-info"{% endif %}>
-        <td>{{ player.username }}</td>
-        <td id="total_{{ player.username }}"><strong>0</strong></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <table class="table table-bordered text-center align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Player</th>
+          <th>Total Strokes</th>
+          <th>Position</th>
+          <th>Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for player in players %}
+        <tr {% if player.is_scorekeeper %}class="table-info"{% endif %}>
+          <td>{{ player.username }}</td>
+          <td id="total_{{ player.username }}"><strong>{{ player.total }}</strong></td>
+          <td>{% if player.position %}{{ player.position|ordinal }}{% else %}—{% endif %}</td>
+          <td>{{ player.points|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+{% endif %}
 </div>
 
 <!-- Submit Confirmation Modal -->
@@ -244,27 +276,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function autoSave(input) {
-        const data = new URLSearchParams();
-        data.append('group_id', input.dataset.group);
-        data.append('player_id', input.dataset.playerId);
-        data.append('hole', input.dataset.hole);
-        data.append('strokes', input.value);
+function autoSave(input) {
+    if (input.value === '') return;  // ignore blank inputs
 
-        fetch("{% url 'save_golf_score' %}", {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": csrfToken,
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: data
-        }).then(response => response.json())
-          .then(data => {
-              if (!data.success) {
-                  alert("⚠️ Error saving score: " + data.error);
-              }
-          });
-    }
+    const strokes = parseInt(input.value);
+    if (strokes > 6 || strokes < 1) return;  // enforce 1–6 range
+
+    const data = new URLSearchParams();
+    data.append('group_id', input.dataset.group);
+    data.append('player_id', input.dataset.playerId);
+    data.append('hole', input.dataset.hole);
+    data.append('strokes', strokes);
+
+    fetch("{% url 'save_golf_score' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: data
+    }).then(response => response.json())
+      .then(data => {
+          if (!data.success) {
+              console.warn("⛔ Save failed:", data.error);  // silently log instead of alert
+          }
+      });
+}
 
     if (scorecardSubmitted) {
         inputs.forEach(input => input.setAttribute('disabled', 'disabled'));
@@ -279,9 +316,11 @@ document.addEventListener('DOMContentLoaded', function () {
             form.submit();
         });
 
-        updateTotals();
+
         startPolling();  // only starts polling if scorecard not submitted
     }
+
+    updateTotals();
 });
 </script>
 
