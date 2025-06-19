@@ -21,7 +21,7 @@
 </div>
 
 {% if scorecard.submitted %}
-<h5 class="text-center mt-4">Total Score</h5>
+<h5 class="text-center mt-4">Final Standings</h5>
 <div class="table-responsive mb-4">
   <table class="table table-bordered text-center align-middle">
     <thead class="table-light">
@@ -36,7 +36,7 @@
       {% for player in players %}
       <tr {% if player.is_scorekeeper %}class="table-info"{% endif %}>
         <td>{{ player.username }}</td>
-        <td><strong>{{ player.total }}</strong></td>
+        <td id="total_{{ player.username }}"><strong>{{ player.total }}</strong></td>
         <td>{{ player.position|ordinal }}</td>
         <td>{{ player.points }}</td>
       </tr>
@@ -95,6 +95,7 @@
         <th>Player</th>
         {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
         <th>Total</th>
+        <th>Grand Total</th>
       </tr>
     </thead>
     <tbody>
@@ -114,6 +115,7 @@
         </td>
         {% endfor %}
         <td id="back9_{{ player.username }}"><strong>0</strong></td>
+        <td>{{ player.points|default:"—" }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -121,31 +123,6 @@
 </div>
 {% endif %}
 
-<!-- Total Score Table -->
-{% if not scorecard.submitted %}
-<h5 class="text-center">Total Score</h5>
-<div class="table-responsive mb-4">
-    <table class="table table-bordered text-center align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Player</th>
-          <th>Total Strokes</th>
-          <th>Position</th>
-          <th>Points</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for player in players %}
-        <tr {% if player.is_scorekeeper %}class="table-info"{% endif %}>
-          <td>{{ player.username }}</td>
-          <td id="total_{{ player.username }}"><strong>{{ player.total }}</strong></td>
-          <td>{% if player.position %}{{ player.position|ordinal }}{% else %}—{% endif %}</td>
-          <td>{{ player.points|default:"—" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-{% endif %}
 </div>
 
 <!-- Submit Confirmation Modal -->
@@ -234,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .catch(err => console.error("Polling error:", err));
-        }, 8000);
+        }, 10000);
     }
 
     function updateAndSave(input) {
