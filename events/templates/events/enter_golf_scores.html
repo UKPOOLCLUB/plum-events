@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 })
                 .catch(err => console.error("Polling error:", err));
-        }, 3000);
+        }, 8000);
     }
 
     function updateAndSave(input) {
@@ -307,7 +307,6 @@ function autoSave(input) {
         inputs.forEach(input => input.setAttribute('disabled', 'disabled'));
     } else {
         inputs.forEach(input => {
-            input.addEventListener('input', () => updateAndSave(input));
             input.addEventListener('change', () => updateAndSave(input));
         });
 
