@@ -2,7 +2,6 @@
 {% load darts_extras %}
 
 {% block content %}
-
 <style>
   .score-input {
     max-width: 60px;
@@ -16,18 +15,15 @@
     margin: 0 auto;
     box-shadow: 0 0 4px #00FFAB44;
   }
-
   .score-input:focus {
     outline: none;
     box-shadow: 0 0 8px #00FFABAA;
   }
-
   .position-cell {
     width: 1%;
     white-space: nowrap;
     padding: 0.5rem;
   }
-
   .position-wrapper {
     display: flex;
     justify-content: center;
@@ -42,20 +38,28 @@
   </a>
 </div>
 
-{% if readonly %}
-  <div class="alert alert-info text-center">
-    ✅ E-Darts results have been submitted. No further changes can be made.
+{% if group.submitted %}
+  <div class="alert alert-success p-2 mb-3 text-center">
+    ✅ This group’s results have been submitted.
   </div>
-{% endif %}
-
-{% if not readonly %}
-<form method="post">
-  {% csrf_token %}
 {% endif %}
 
 {% for group in groups %}
   <div class="card mb-4 p-3 border-accent">
-    <h5 class="text-accent mb-3">Group {{ group.group_number }}</h5>
+    <h5 class="text-accent mb-2">Group {{ group.group_number }}</h5>
+      <p class="mb-3 text-light">
+        <small>🧑‍⚖️ Scorekeeper:
+          <strong class="text-accent">
+            {{ group.scorekeeper.username|default:"(Unassigned)" }}
+          </strong>
+        </small>
+      </p>
+
+  {% if not readonly and not group.submitted and scorers|get_item:group.id %}
+    <form method="post" action="{% url 'submit_darts_group' event.id group.id %}">
+      {% csrf_token %}
+  {% endif %}
+
     <div class="table-responsive">
       <table class="table table-dark table-bordered align-middle text-center mb-0">
         <thead>
@@ -70,7 +74,7 @@
               <td class="fw-semibold">{{ player.username }}</td>
               <td class="position-cell">
                 <div class="position-wrapper">
-                  {% if readonly %}
+                  {% if readonly or group.submitted %}
                     {% with result=player|darts_result:event %}
                       {% if result %}
                         <span class="text-success fw-bold fs-5">{{ result.finishing_position }}</span>
@@ -78,14 +82,16 @@
                         <span class="text-muted">–</span>
                       {% endif %}
                     {% endwith %}
-                  {% else %}
+                  {% elif scorers|get_item:group.id %}
                     <input type="number"
-                           name="position_{{ group.id }}_{{ player.id }}"
+                           name="position_{{ player.id }}"
                            min="1"
                            max="{{ group.participants.count }}"
                            class="form-control score-input"
                            required
                            onwheel="this.blur()">
+                  {% else %}
+                    <span class="text-muted">–</span>
                   {% endif %}
                 </div>
               </td>
@@ -94,12 +100,14 @@
         </tbody>
       </table>
     </div>
+
+  {% if not readonly and not group.submitted and scorers|get_item:group.id %}
+    <button type="submit" class="btn btn-success w-100 btn-lg mt-3">
+      ✅ Submit Group {{ group.group_number }}
+    </button>
+  </form>
+  {% endif %}
+
   </div>
 {% endfor %}
-
-{% if not readonly %}
-  <button type="submit" class="btn btn-success w-100 btn-lg mt-2">✅ Submit Results</button>
-</form>
-{% endif %}
-
 {% endblock %}

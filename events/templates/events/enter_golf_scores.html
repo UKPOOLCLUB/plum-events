@@ -59,7 +59,7 @@
       <tr>
         <th>Player</th>
         {% for hole in holes|slice:":9" %}<th>{{ hole }}</th>{% endfor %}
-        <th>Total</th>
+        <th>F9</th>
       </tr>
     </thead>
     <tbody>
@@ -94,8 +94,8 @@
       <tr>
         <th>Player</th>
         {% for hole in holes|slice:"9:" %}<th>{{ hole }}</th>{% endfor %}
+        <th>B9</th>
         <th>Total</th>
-        <th>Grand Total</th>
       </tr>
     </thead>
     <tbody>
@@ -115,7 +115,7 @@
         </td>
         {% endfor %}
         <td id="back9_{{ player.username }}"><strong>0</strong></td>
-        <td>{{ player.points|default:"—" }}</td>
+        <td id="grandtotal_{{ player.username }}"><strong>0</strong></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -146,18 +146,25 @@
 <!-- Input Styling -->
 <style>
 .score-input {
-  width: 2.2rem;
-  height: 2.2rem;
-  font-size: 1rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  font-size: 0.85rem;
   text-align: center;
   font-weight: 600;
   padding: 0;
   margin: 0;
-  border-radius: 0.3rem;
-  border: 1px solid #ccc;
+  border-radius: 0.2rem;
+  border: 1px solid #aaa;
   box-sizing: border-box;
 }
 
+/* Apply tight left/right padding but keep top/bottom spacing */
+.table td, .table th {
+  padding: 0.3rem 0.1rem !important;  /* top/bottom | left/right */
+  vertical-align: middle;
+}
+
+/* Hide spin buttons in all browsers */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -250,6 +257,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const tot = document.getElementById(`total_${username}`);
             if (tot) tot.innerHTML = `<strong>${totals.total}</strong>`;
+
+            const grand = document.getElementById(`grandtotal_${username}`);
+            if (grand) grand.innerHTML = `<strong>${totals.total}</strong>`;
+
         }
     }
 

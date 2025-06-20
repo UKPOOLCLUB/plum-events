@@ -28,7 +28,6 @@ class Event(models.Model):
     selected_games = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     has_started = models.BooleanField(default=False)
-    edarts_completed = models.BooleanField(default=False)
 
     host = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -323,9 +322,12 @@ class EDartsGroup(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='darts_groups')
     group_number = models.PositiveIntegerField()
     participants = models.ManyToManyField(Participant)
+    scorekeeper = models.ForeignKey(Participant, on_delete=models.SET_NULL, null=True, blank=True, related_name='darts_groups_led')
+    submitted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"E-Darts Group {self.group_number} – {self.event.name}"
+
 
 class EDartsResult(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='darts_results')

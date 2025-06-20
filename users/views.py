@@ -142,7 +142,11 @@ def start_event(request, event_code):
             EDartsGroup.objects.filter(event=event).delete()
 
             for i, group_players in enumerate(group_list, start=1):
-                group = EDartsGroup.objects.create(event=event, group_number=i)
+                group = EDartsGroup.objects.create(
+                    event=event,
+                    group_number=i,
+                    scorekeeper=group_players[0]  # 🧠 assign first player as scorekeeper
+                )
                 group.participants.set(group_players)
 
         # ✅ Pool League Setup
