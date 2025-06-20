@@ -313,7 +313,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (scorecardSubmitted) {
         inputs.forEach(input => input.setAttribute('disabled', 'disabled'));
     } else {
-        inputs.forEach(input => {
+      inputs.forEach(input => {
+            input.addEventListener('input', () => updateAndSave(input));
             input.addEventListener('change', () => updateAndSave(input));
         });
 

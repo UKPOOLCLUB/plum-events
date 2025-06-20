@@ -15,6 +15,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Q
 from uuid import UUID
 from django.template.loader import render_to_string
+import hashlib
+import json
 
 
 import logging
@@ -312,11 +314,27 @@ def submit_table_tennis_result(request, event_id, winner_id):
 
 def table_tennis_state(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    players = TableTennisPlayer.objects.filter(event=event).order_by('finishing_position', 'order')
+    config = event.table_tennis_config
+    players = TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position')
+
+    data = []
+    for p in players:
+        data.append({
+            'id': p.id,
+            'username': p.participant.username,
+            'games_won': p.games_won,
+            'has_finished': p.has_finished,
+            'finish_rank': p.finish_rank,
+            'points_awarded': p.points_awarded,
+            'is_playing': not p.has_finished and players.index(p) < 2,
+            'is_next': not p.has_finished and players.index(p) == 2,
+        })
+
+    game_complete = players.filter(has_finished=True).count() >= config.players_to_finish
 
     return JsonResponse({
-        'player_order': [p.participant.username for p in players],
-        'finished_count': players.filter(finishing_position__isnull=False).count()
+        'game_complete': game_complete,
+        'players': data,
     })
 
 def pool_league_view(request, event_id):
@@ -564,8 +582,12 @@ def pool_league_state(request, event_id):
         key=lambda x: (-x[1], x[0].lower())
     )
 
+    # Generate hash to detect change
+    hash_input = json.dumps(league_state, sort_keys=True).encode()
+    state_hash = hashlib.md5(hash_input).hexdigest()
+
     return JsonResponse({
-        "league_state": league_state
+        "state_hash": state_hash,
     })
 
 def generate_darts_groups(event):

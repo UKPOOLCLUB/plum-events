@@ -73,15 +73,33 @@
     const pollingUrl = document.body.dataset.pollingUrl;
     let lastState = null;
 
-    setInterval(() => {
-      fetch(pollingUrl)
-        .then(res => res.json())
-        .then(data => {
-          if (data.state_changed) {
-            location.reload();  // full reload if structure may change
-          }
-        });
-    }, 5000);
+let lastHash = null;
+
+setInterval(() => {
+  fetch(pollingUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (!lastHash) {
+        lastHash = data.state_hash;
+        return;
+      }
+
+      if (data.state_hash !== lastHash) {
+        fetch(window.location.href, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const updatedContainer = doc.getElementById("pool-league-container");
+            if (updatedContainer) {
+              document.getElementById("pool-league-container").innerHTML = updatedContainer.innerHTML;
+              initSubmitButtons();  // rebind after update
+              lastHash = data.state_hash;
+            }
+          });
+      }
+    });
+}, 2000);
   });
 </script>
 

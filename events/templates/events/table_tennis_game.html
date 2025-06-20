@@ -97,19 +97,57 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  const pollingUrl = document.body.dataset.pollingUrl;
+
+  function fetchStateAndUpdate() {
+    fetch(pollingUrl)
+      .then(response => response.json())
+      .then(data => {
+        updateGameView(data);
+      });
+  }
+
+  function updateGameView(data) {
+    const tableBody = document.querySelector('tbody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    data.all_players.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="fw-semibold">${p.username}</td>
+        <td>${p.games_won}</td>
+        <td>
+          ${p.has_finished ? `<span class="badge bg-secondary">Finished (${ordinal(p.finish_rank)})</span>` :
+            p.is_playing ? `<span class="badge bg-warning text-dark">Playing</span>` :
+            p.is_next ? `<span class="badge bg-info text-dark">Up Next</span>` :
+            `<span class="badge bg-light text-dark">Waiting</span>`}
+        </td>
+        <td>${p.points_awarded}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    if (data.game_complete) {
+      document.querySelector('.alert')?.classList.remove('d-none');
+      document.querySelector('.d-flex.justify-content-center')?.classList.add('d-none');
+    }
+  }
+
+  function ordinal(n) {
+    return n + (["st", "nd", "rd"][((n + 90) % 100 - 10) % 10 - 1] || "th");
+  }
+
+  // Start polling every 3 seconds
+  setInterval(fetchStateAndUpdate, 3000);
+
+  // Confetti effect on win button
   document.querySelectorAll('form.win-button-form').forEach(form => {
     form.addEventListener('submit', function(e) {
       e.preventDefault();
-
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.4 }
-      });
-
-      setTimeout(() => {
-        form.submit();
-      }, 500);
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.4 } });
+      setTimeout(() => { form.submit(); }, 500);
     });
   });
 });
