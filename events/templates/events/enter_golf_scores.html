@@ -74,7 +74,7 @@
            data-player-id="{{ player.id }}"
            data-hole="{{ hole }}"
            min="1" max="6"
-           value="{{ scores|get_item:player.username|get_item:hole }}"
+           value="{{ scores|get_item:player.username|get_item:hole }}">
 
         </td>
         {% endfor %}
@@ -110,7 +110,7 @@
            data-player-id="{{ player.id }}"
            data-hole="{{ hole }}"
            min="1" max="6"
-           value="{{ scores|get_item:player.username|get_item:hole }}"
+           value="{{ scores|get_item:player.username|get_item:hole }}">
 
         </td>
         {% endfor %}
@@ -120,6 +120,14 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
+{% endif %}
+
+{% if not scorecard.submitted %}
+<div class="text-center mt-4">
+    <button type="button" id="manualSubmitBtn" class="btn btn-warning btn-lg">
+        📝 Submit Scorecard
+    </button>
 </div>
 {% endif %}
 
@@ -185,27 +193,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('submitModal');
     const modal = new bootstrap.Modal(modalEl);
     const scorecardSubmitted = {{ scorecard.submitted|yesno:"true,false" }};
-    let pollingInterval = null;
+    let pollingTimeout = null;
 
-    function stopPolling() {
-        if (pollingInterval) {
-            clearInterval(pollingInterval);
-            pollingInterval = null;
+    function resetPollingTimeout() {
+        if (pollingTimeout) {
+            clearTimeout(pollingTimeout);
         }
-    }
 
-    function startPolling() {
-        const pollingUrl = document.body.dataset.pollingUrl;
-        if (!pollingUrl || scorecardSubmitted) return;
-
-        pollingInterval = setInterval(() => {
+        pollingTimeout = setTimeout(() => {
             const filled = Array.from(inputs).filter(i => i.value !== '').length;
 
             if (filled === expectedEntries) {
-                stopPolling();
-                modal.show();
+                modal.show();  // show submit modal
                 return;
             }
+
+            const pollingUrl = document.body.dataset.pollingUrl;
+            if (!pollingUrl || scorecardSubmitted) return;
+
+            console.log("🔄 Polling after inactivity:", new Date().toLocaleTimeString());
 
             fetch(pollingUrl)
                 .then(res => res.json())
@@ -214,11 +220,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.querySelectorAll('.score-input').forEach(input => {
                             input.setAttribute('disabled', 'disabled');
                         });
-                        stopPolling();
                     }
                 })
                 .catch(err => console.error("Polling error:", err));
-        }, 10000);
+        }, 20000);
     }
 
     function updateAndSave(input) {
@@ -260,36 +265,50 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const grand = document.getElementById(`grandtotal_${username}`);
             if (grand) grand.innerHTML = `<strong>${totals.total}</strong>`;
-
         }
     }
 
-function autoSave(input) {
-    if (input.value === '') return;  // ignore blank inputs
+    const manualSubmitBtn = document.getElementById('manualSubmitBtn');
+      if (manualSubmitBtn) {
+          manualSubmitBtn.addEventListener('click', () => {
+              const filled = Array.from(inputs).filter(i => i.value !== '').length;
 
-    const strokes = parseInt(input.value);
-    if (strokes > 6 || strokes < 1) return;  // enforce 1–6 range
+              if (filled === expectedEntries) {
+                  modal.show();
+              } else {
+                  alert("⛔ Please complete all scores before submitting.");
+              }
+          });
+      }
 
-    const data = new URLSearchParams();
-    data.append('group_id', input.dataset.group);
-    data.append('player_id', input.dataset.playerId);
-    data.append('hole', input.dataset.hole);
-    data.append('strokes', strokes);
+    function autoSave(input) {
+        if (input.value === '') return;
 
-    fetch("{% url 'save_golf_score' %}", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: data
-    }).then(response => response.json())
-      .then(data => {
-          if (!data.success) {
-              console.warn("⛔ Save failed:", data.error);  // silently log instead of alert
-          }
-      });
-}
+        const strokes = parseInt(input.value);
+        if (strokes > 6 || strokes < 1) return;
+
+        const data = new URLSearchParams();
+        data.append('group_id', input.dataset.group);
+        data.append('player_id', input.dataset.playerId);
+        data.append('hole', input.dataset.hole);
+        data.append('strokes', strokes);
+
+        fetch("{% url 'save_golf_score' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: data
+        }).then(response => response.json())
+          .then(data => {
+              if (!data.success) {
+                  console.warn("⛔ Save failed:", data.error);
+              } else {
+                  resetPollingTimeout();  // ⏱ restart the inactivity timer
+              }
+          });
+    }
 
     if (scorecardSubmitted) {
         inputs.forEach(input => input.setAttribute('disabled', 'disabled'));
@@ -299,16 +318,16 @@ function autoSave(input) {
         });
 
         document.getElementById('confirmSubmitBtn').addEventListener('click', () => {
-            stopPolling();
+            if (pollingTimeout) clearTimeout(pollingTimeout);
             form.submit();
         });
 
-
-        startPolling();  // only starts polling if scorecard not submitted
+        resetPollingTimeout();  // start polling countdown initially
     }
 
     updateTotals();
 });
 </script>
+
 
 {% endblock %}

@@ -108,13 +108,14 @@
                     {% endif %}
                   </td>
                     <td>
-                      {% if killer.is_complete %}
+                      {% if player.finish_position %}
                         {{ player.finish_position|ordinal }} – {{ player.points_awarded }} pts
                       {% elif player == current_player %}
                         🎯 Your Turn
                       {% else %}
                         —
                       {% endif %}
+
                     </td>
                   <td>
                     <span class="badge bg-secondary px-2 py-1">{{ player.lives }} 🧡</span>
@@ -218,6 +219,12 @@
 </style>
 
 <script>
+  function ordinal(n) {
+    if (!n) return "";
+    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
   async function pollKillerGameState() {
     const url = document.body.dataset.pollingUrl;
     try {
@@ -232,63 +239,58 @@
 
   function updateKillerGameUI(data) {
     const banner = document.querySelector(".alert-primary, .alert-success");
+
+    // Top banner
     if (data.is_complete) {
       banner.classList.remove("alert-primary");
       banner.classList.add("alert-success");
-      banner.innerHTML = `🏆 <strong>${data.players.find(p => p.finish_position === 1)?.username} wins!</strong> Game over.`;
+      const winner = data.players.find(p => p.finish_position === 1)?.username || "Unknown";
+      banner.innerHTML = `🏆 <strong>${winner} wins!</strong> Game over.`;
     } else {
       banner.classList.remove("alert-success");
       banner.classList.add("alert-primary");
       banner.innerHTML = `<strong>It's ${data.current_player}'s turn</strong>`;
     }
 
-// Update player table
-const rows = document.querySelectorAll("tbody tr");
+    // Update each player row
+    const rows = document.querySelectorAll("tbody tr");
 
-// Sort players by finish_position (ascending)
-const sortedPlayers = data.players.slice().sort((a, b) => a.finish_position - b.finish_position);
+    data.players.forEach((player, index) => {
+      const row = rows[index];
+      row.classList.remove("killer-current", "killer-eliminated", "text-accent");
 
-sortedPlayers.forEach((player, index) => {
-  const row = rows[index];
-  row.classList.remove("killer-current", "killer-eliminated", "text-accent");
+      // Player name
+      row.children[0].innerHTML =
+        player.finish_position === 1
+          ? `🏆 <strong>${player.username}</strong><br><small class="text-success"></small>`
+          : player.username;
 
-  // Player Name
-  row.children[0].innerHTML =
-    player.finish_position === 1
-      ? `🏆 <strong>${player.username}</strong><br><small class="text-success"></small>`
-      : player.username;
+      // Status column (position + points if eliminated)
+      if (player.finish_position) {
+        const place = ordinal(player.finish_position);
+        const points = player.points_awarded;
+        row.children[1].innerHTML = `${place} – ${points} pts`;
+      } else if (player.is_current) {
+        row.children[1].innerHTML = "🎯 Your Turn";
+      } else {
+        row.children[1].innerHTML = "—";
+      }
 
-  // Status Column
-  if (data.is_complete) {
-    row.children[1].innerHTML = `${ordinal(player.finish_position)} – ${player.points_awarded} pts`;
-  } else {
-    row.children[1].innerHTML = player.is_current
-      ? "🎯 Your Turn"
-      : "—";
+      // Lives
+      row.children[2].innerHTML = `<span class="badge bg-secondary px-2 py-1">${player.lives} 🧡</span>`;
+
+      // Styling
+      if (player.eliminated) {
+        row.classList.add("killer-eliminated");
+      } else if (player.is_current) {
+        row.classList.add("killer-current", "text-accent");
+      }
+    });
   }
 
-  // Lives Column
-  row.children[2].innerHTML = `<span class="badge bg-secondary px-2 py-1">${player.lives} 🧡</span>`;
-
-  // Row classes
-  if (!data.is_complete && player.eliminated) {
-    row.classList.add("killer-eliminated");
-  } else if (player.is_current) {
-    row.classList.add("killer-current", "text-accent");
-  }
-});
-
-  }
-
-  function ordinal(n) {
-    if (!n) return "";
-    const s = ["th", "st", "nd", "rd"], v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  }
-
-  // Start polling every 5 seconds
   setInterval(pollKillerGameState, 3000);
 </script>
+
 </div>
 
 {% endblock %}
