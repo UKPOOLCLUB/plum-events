@@ -9,3 +9,7 @@ def darts_result(player, event):
         return EDartsResult.objects.get(event=event, participant=player)
     except EDartsResult.DoesNotExist:
         return None
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(f"group_{key}")

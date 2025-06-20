@@ -123,8 +123,28 @@ class EDartsConfigAdmin(admin.ModelAdmin):
 
 @admin.register(EDartsGroup)
 class EDartsGroupAdmin(admin.ModelAdmin):
-    list_display = ("event", "group_number")
-    filter_horizontal = ("participants",)
+    list_display = ('event', 'group_number', 'scorekeeper_display')
+    list_filter = ('event',)
+    search_fields = ('event__name', 'scorekeeper__username')
+    filter_horizontal = ('participants',)
+
+    def scorekeeper_display(self, obj):
+        return obj.scorekeeper.username if obj.scorekeeper else "—"
+    scorekeeper_display.short_description = 'Scorekeeper'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # Optional: limit scorekeeper dropdown to participants of the group’s event
+        if db_field.name == "scorekeeper" and request.resolver_match:
+            try:
+                object_id = request.resolver_match.kwargs.get('object_id')
+                if object_id:
+                    from .models import EDartsGroup
+                    group = EDartsGroup.objects.get(pk=object_id)
+                    kwargs["queryset"] = group.event.participant_set.all()
+            except Exception:
+                pass  # fallback to all participants
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(EDartsResult)
 class EDartsResultAdmin(admin.ModelAdmin):

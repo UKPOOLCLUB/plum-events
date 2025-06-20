@@ -554,68 +554,81 @@ def enter_edarts_results(request, event_id):
 
     participant = get_object_or_404(Participant, id=participant_id, event=event)
 
-    if event.edarts_completed:
-        return render(request, 'events/enter_edarts_results.html', {
-            'event': event,
-            'groups': groups,
-            'readonly': True,
-        })
+    # ✅ Readonly if all groups are submitted
+    readonly = all(group.submitted for group in groups)
 
-    if request.method == 'POST':
-        # 🧠 Existing validation code here...
-        for group in groups:
-            positions = []
-            for player in group.participants.all():
-                key = f"position_{group.id}_{player.id}"
-                val = request.POST.get(key)
-                if not val:
-                    messages.error(request, f"Missing finishing position for {player.username} in Group {group.group_number}")
-                    return redirect('enter_edarts_results', event_id=event.id)
-                positions.append(int(val))
-
-            if len(set(positions)) != len(positions):
-                messages.error(request, f"Duplicate positions in Group {group.group_number}.")
-                return redirect('enter_edarts_results', event_id=event.id)
-
-            if sorted(positions) != list(range(1, len(positions) + 1)):
-                messages.error(request, f"Invalid positions in Group {group.group_number}. Use 1 to {len(positions)}.")
-                return redirect('enter_edarts_results', event_id=event.id)
-
-        # ✅ Save results
-        for group in groups:
-            for player in group.participants.all():
-                key = f"position_{group.id}_{player.id}"
-                position = int(request.POST.get(key))
-                points = config.get_points_for_position(position)
-
-                EDartsResult.objects.update_or_create(
-                    event=event,
-                    participant=player,
-                    defaults={
-                        'finishing_position': position,
-                        'points_awarded': points
-                    }
-                )
-
-                if not player.kept_scores:
-                    player.kept_scores = {}
-
-                player.kept_scores["e_darts"] = {
-                    "points": points,
-                    "position": position
-                }
-                player.save()
-
-        # 🔒 Mark event as completed
-        event.edarts_completed = True
-        event.save()
-
-        return redirect('live_leaderboard', event_code=event.code)
+    # ✅ Scorers per group
+    scorers = {
+        f"group_{group.id}": (group.scorekeeper == participant)
+        for group in groups
+    }
 
     return render(request, 'events/enter_edarts_results.html', {
         'event': event,
-        'groups': groups
+        'groups': groups,
+        'readonly': readonly,
+        'scorers': scorers,
+        'participant': participant,
     })
+
+
+@require_POST
+def submit_edarts_group(request, event_id, group_id):
+    event = get_object_or_404(Event, id=event_id)
+    group = get_object_or_404(EDartsGroup, id=group_id, event=event)
+    config = event.darts_config
+    participant_id = request.session.get('participant_id')
+    participant = get_object_or_404(Participant, id=participant_id, event=event)
+
+    # Only allow scorer or host to submit
+    if group.scorekeeper != participant:
+        messages.error(request, "You are not allowed to submit results for this group.")
+        return redirect('enter_edarts_results', event_id=event.id)
+
+    positions = []
+    for player in group.participants.all():
+        key = f"position_{player.id}"
+        val = request.POST.get(key)
+        if not val:
+            messages.error(request, f"Missing position for {player.username} in Group {group.group_number}")
+            return redirect('enter_edarts_results', event_id=event.id)
+        positions.append(int(val))
+
+    if len(set(positions)) != len(positions):
+        messages.error(request, f"Duplicate positions in Group {group.group_number}")
+        return redirect('enter_edarts_results', event_id=event.id)
+
+    if sorted(positions) != list(range(1, len(positions) + 1)):
+        messages.error(request, f"Positions must be 1 to {len(positions)}")
+        return redirect('enter_edarts_results', event_id=event.id)
+
+    # Save results
+    for player in group.participants.all():
+        position = int(request.POST.get(f"position_{player.id}"))
+        points = config.get_points_for_position(position)
+
+        EDartsResult.objects.update_or_create(
+            event=event,
+            participant=player,
+            defaults={
+                'finishing_position': position,
+                'points_awarded': points
+            }
+        )
+
+        if not player.kept_scores:
+            player.kept_scores = {}
+
+        player.kept_scores["e_darts"] = {
+            "points": points,
+            "position": position
+        }
+        player.save()
+        group.submitted = True
+        group.save()
+
+    messages.success(request, f"Group {group.group_number} results submitted.")
+    return redirect('enter_edarts_results', event_id=event.id)
 
 def killer_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
