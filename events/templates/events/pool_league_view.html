@@ -40,7 +40,7 @@
     return cookieValue;
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function initSubmitButtons() {
     document.querySelectorAll(".submit-button").forEach(button => {
       button.addEventListener("click", function () {
         const form = this.closest("form");
@@ -56,16 +56,33 @@
             "X-CSRFToken": getCookie("csrftoken")
           }
         })
-          .then(res => res.text())
-          .then(html => {
-            document.getElementById("pool-league-container").innerHTML = html;
-          })
-          .catch(err => alert("Error submitting result"));
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("pool-league-container").innerHTML = html;
+          initSubmitButtons();  // ✅ re-activate buttons after content reload
+        })
+        .catch(err => alert("Error submitting result"));
       });
     });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initSubmitButtons();
+
+    // ✅ Start polling
+    const pollingUrl = document.body.dataset.pollingUrl;
+    let lastState = null;
+
+    setInterval(() => {
+      fetch(pollingUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.state_changed) {
+            location.reload();  // full reload if structure may change
+          }
+        });
+    }, 5000);
   });
 </script>
-
-
 
 {% endblock %}

@@ -15,12 +15,12 @@
     </tr>
   </thead>
   <tbody>
-    {% for player in all_players|dictsortreversed:"wins" %}
+    {% for player in all_players %}
       <tr class="{% if player == current_player %}table-success{% endif %}">
         <td>{{ forloop.counter }}</td>
         <td>{{ player.participant.username }}</td>
-        <td>{{ player.wins|add:player.losses|default:0 }}</td>
-        <td>{{ player.wins }}</td>
+        <td>{{ player.calculated_played }}</td>
+        <td>{{ player.calculated_wins }}</td>
         <td>{{ player.points_awarded|default:"–" }}</td>
       </tr>
     {% endfor %}

@@ -8,12 +8,13 @@ from .models import PoolLeaguePlayer, PoolLeagueMatch, EDartsGroup, EDartsConfig
 from .models import Killer, KillerPlayer
 from .utils import create_balanced_groups
 from django.contrib import messages
-from django.http import HttpResponseForbidden, HttpResponseBadRequest
+from django.http import HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
 from events.models import Event, Participant
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Q
 from uuid import UUID
+from django.template.loader import render_to_string
 
 
 import logging
@@ -318,9 +319,6 @@ def table_tennis_state(request, event_id):
         'finished_count': players.filter(finishing_position__isnull=False).count()
     })
 
-
-from django.http import HttpResponse
-
 def pool_league_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     participant_id = request.session.get('participant_id')
@@ -347,12 +345,17 @@ def pool_league_view(request, event_id):
     for match in matches:
         match.opponent = match.player2 if match.player1 == current_player else match.player1
 
-    all_players = PoolLeaguePlayer.objects.filter(event=event).select_related('participant')
+    all_players = get_player_standings(event)
     league_completed = is_pool_league_complete(event)
 
     standings = []
     if league_completed:
-        standings = all_players.order_by('finish_rank')
+        standings = sorted(
+            all_players,
+            key=lambda p: p.finish_rank if p.finish_rank else 9999
+        )
+    else:
+        standings = all_players
 
     context = {
         'event': event,
@@ -364,19 +367,38 @@ def pool_league_view(request, event_id):
     }
     return render(request, "events/pool_league_view.html", context)
 
+def get_player_standings(event):
+    players = PoolLeaguePlayer.objects.filter(event=event).select_related("participant")
+    matches = PoolLeagueMatch.objects.filter(event=event, completed=True)
 
-from django.views.decorators.http import require_POST
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
-from django.template.loader import render_to_string
-from uuid import UUID
-from .models import PoolLeagueMatch, PoolLeaguePlayer, PoolLeagueConfig
-from django.db.models import Q
+    stats = defaultdict(lambda: {"wins": 0, "losses": 0, "player": None})
+
+    for player in players:
+        stats[player.id]["player"] = player
+
+    for match in matches:
+        if match.winner:
+            winner_id = match.winner.id
+            loser_id = match.player1.id if match.player2.id == winner_id else match.player2.id
+            stats[winner_id]["wins"] += 1
+            stats[loser_id]["losses"] += 1
+
+    # Attach calculated stats to each player object
+    annotated_players = []
+    for data in stats.values():
+        p = data["player"]
+        p.calculated_wins = data["wins"]
+        p.calculated_losses = data["losses"]
+        p.calculated_played = data["wins"] + data["losses"]
+        annotated_players.append(p)
+
+    # Sort by wins descending, then name
+    return sorted(annotated_players, key=lambda x: (-x.calculated_wins, x.participant.username.lower()))
 
 @require_POST
 def submit_pool_match_result(request):
     match_id = request.POST.get('match_id')
-    result = request.POST.get('result')  # "win" or "loss"
+    result = request.POST.get('result')
     raw_participant_id = request.POST.get('player_id') or request.session.get('participant_id')
 
     if not (match_id and result and raw_participant_id):
@@ -392,19 +414,15 @@ def submit_pool_match_result(request):
     if match.completed:
         return HttpResponseBadRequest("Match already completed.")
 
-    if submitting_player != match.player1 and submitting_player != match.player2:
+    if submitting_player not in [match.player1, match.player2]:
         return HttpResponseForbidden("You are not part of this match.")
 
     opponent = match.player2 if submitting_player == match.player1 else match.player1
 
     if result == "win":
         match.winner = submitting_player
-        submitting_player.wins += 1
-        opponent.losses += 1
     elif result == "loss":
         match.winner = opponent
-        opponent.wins += 1
-        submitting_player.losses += 1
     else:
         return HttpResponseBadRequest("Invalid result.")
 
@@ -413,13 +431,12 @@ def submit_pool_match_result(request):
     submitting_player.save()
     opponent.save()
 
-    # Check if league is now complete
-    league_completed = not PoolLeagueMatch.objects.filter(event=match.event, completed=False).exists()
+    if is_pool_league_complete(match.event):
+        finalize_pool_league(match.event)
 
-    # Get updated data for re-render
-    players = PoolLeaguePlayer.objects.filter(event=match.event)
+    # Prepare data for updated UI
+    players = get_player_standings(match.event)
 
-    # Only include matches that involve the submitting player, and annotate opponent
     matches = PoolLeagueMatch.objects.filter(
         event=match.event
     ).filter(
@@ -434,30 +451,30 @@ def submit_pool_match_result(request):
         "all_players": players,
         "current_player": submitting_player,
         "event": match.event,
-        "league_completed": league_completed,
+        "league_completed": not PoolLeagueMatch.objects.filter(event=match.event, completed=False).exists(),
     })
 
     return HttpResponse(html)
 
+
 def is_pool_league_complete(event):
     return not PoolLeagueMatch.objects.filter(event=event, completed=False).exists()
-
 
 def finalize_pool_league(event):
     if not is_pool_league_complete(event):
         return False
 
-    players = list(PoolLeaguePlayer.objects.filter(event=event))
+    players = get_player_standings(event)
 
     if all(p.has_finished for p in players):
         return False
 
     config = event.pool_league_config
 
-    # Group players by number of wins
+    # Group players by live win counts
     wins_groups = defaultdict(list)
     for p in players:
-        wins_groups[p.wins].append(p)
+        wins_groups[p.calculated_wins].append(p)
 
     sorted_win_totals = sorted(wins_groups.keys(), reverse=True)
 
@@ -470,8 +487,9 @@ def finalize_pool_league(event):
         if len(group) == 1:
             ranked_players.append((group[0], current_rank))
             current_rank += 1
+
         elif len(group) == 2:
-            # Head-to-head logic
+            # Head-to-head tiebreaker
             p1, p2 = group
             match = PoolLeagueMatch.objects.filter(
                 event=event,
@@ -487,20 +505,20 @@ def finalize_pool_league(event):
                 ranked_players.append((loser, current_rank + 1))
                 current_rank += 2
             else:
-                # No valid match found — fallback to shared points
+                # No result or unclear – split average points
                 avg_points = config.get_points_for_rank(current_rank, 2)
                 for player in group:
                     ranked_players.append((player, current_rank, avg_points))
                 current_rank += 2
 
         else:
-            # 3+ way tie: split points
+            # 3+ way tie – average the points
             avg_points = config.get_points_for_rank_range(current_rank, len(group))
             for player in group:
                 ranked_players.append((player, current_rank, avg_points))
             current_rank += len(group)
 
-    # Assign points and ranks
+    # Assign final rank and points
     for item in ranked_players:
         if len(item) == 2:
             player, rank = item
@@ -511,9 +529,31 @@ def finalize_pool_league(event):
         player.finish_rank = rank
         player.points_awarded = int(Decimal(points).to_integral_value(rounding=ROUND_HALF_UP))
         player.has_finished = True
+
+        # Optional: Store for reference
+        player.wins = getattr(player, "calculated_wins", 0)
+        player.losses = getattr(player, "calculated_losses", 0)
+
         player.save()
 
     return True
+
+def recalculate_league_standings(event):
+    players = PoolLeaguePlayer.objects.filter(event=event)
+    matches = PoolLeagueMatch.objects.filter(event=event, completed=True)
+
+    # Reset
+    players.update(wins=0, losses=0)
+
+    for match in matches:
+        if match.winner:
+            match.winner.wins += 1
+            loser = match.player1 if match.player2 == match.winner else match.player2
+            loser.losses += 1
+
+    for player in players:
+        player.save()
+
 
 def pool_league_state(request, event_id):
     event = get_object_or_404(Event, id=event_id)
