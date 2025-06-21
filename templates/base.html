@@ -17,6 +17,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary mb-4">
       <div class="container-fluid">
         <a class="navbar-brand fw-bold text-accent" href="#">
+            <h2 class="mb-1 neon-heading">🏆 {{ event.name }} 🏆</h2>
         </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks" aria-controls="navLinks" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -46,7 +47,7 @@
   </div>
 </nav>
 
-    <div class="container py-4">
+    <div class="container pt-0 pb-2">
         {% block content %}
         {% endblock %}
     </div>

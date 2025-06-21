@@ -10,10 +10,21 @@
 </script>
 {% endif %}
 
-<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+<style>
+  .golf-header {
+    color: #00FFAB;
+    text-shadow: 0 0 6px #00FFAB;
+  }
+</style>
+
+<div class="text-center mb-2">
   <div>
-    <h2 class="mb-0">Mini-Golf Scorecard</h2>
-    <p class="text-light mb-0">Scorekeeper: <strong>{{ scorekeeper.username }}</strong></p>
+    <h2 class="text-light fw-semibold mb-1">⛳️ Mini-Golf Scorecard</h2>
+        <small>🧑‍⚖️ Scorekeeper:
+          <strong class="text-accent">
+            {{ group.scorekeeper.username|default:"(Unassigned)" }}
+          </strong>
+        </small>
   </div>
 </div>
 
