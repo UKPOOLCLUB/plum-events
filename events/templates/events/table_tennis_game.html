@@ -101,9 +101,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function fetchStateAndUpdate() {
     fetch(pollingUrl)
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
         updateGameView(data);
+      })
+      .catch(err => {
+        console.error("Polling failed:", err);
       });
   }
 
