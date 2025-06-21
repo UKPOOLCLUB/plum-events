@@ -315,7 +315,9 @@ def submit_table_tennis_result(request, event_id, winner_id):
 def table_tennis_state(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     config = event.table_tennis_config
-    players = TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position')
+
+    players_qs = TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position')
+    players = list(players_qs)  # ✅ convert to list so .index() works
 
     data = []
     for p in players:
@@ -330,7 +332,7 @@ def table_tennis_state(request, event_id):
             'is_next': not p.has_finished and players.index(p) == 2,
         })
 
-    game_complete = players.filter(has_finished=True).count() >= config.players_to_finish
+    game_complete = sum(p.has_finished for p in players) >= config.players_to_finish
 
     return JsonResponse({
         'game_complete': game_complete,
@@ -618,10 +620,11 @@ def enter_edarts_results(request, event_id):
 
     # ✅ Readonly if all groups are submitted
     readonly = all(group.submitted for group in groups)
+    is_host = event.host == participant.user
 
     # ✅ Scorers per group
     scorers = {
-        f"group_{group.id}": (group.scorekeeper == participant)
+        f"group_{group.id}": (group.scorekeeper == participant or is_host)
         for group in groups
     }
 
@@ -631,6 +634,8 @@ def enter_edarts_results(request, event_id):
         'readonly': readonly,
         'scorers': scorers,
         'participant': participant,
+        'is_host': is_host,
+
     })
 
 
