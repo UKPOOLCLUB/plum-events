@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tableBody.innerHTML = '';
 
-    data.all_players.forEach(p => {
+    data.players.forEach(p => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="fw-semibold">${p.username}</td>

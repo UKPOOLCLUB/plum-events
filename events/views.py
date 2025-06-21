@@ -8,7 +8,7 @@ from .models import PoolLeaguePlayer, PoolLeagueMatch, EDartsGroup, EDartsConfig
 from .models import Killer, KillerPlayer
 from .utils import create_balanced_groups
 from django.contrib import messages
-from django.http import HttpResponseForbidden, HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponseBadRequest, HttpResponse, HttpResponseServerError
 from events.models import Event, Participant
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
@@ -312,32 +312,50 @@ def submit_table_tennis_result(request, event_id, winner_id):
 
     return redirect('table_tennis_game_view', event_id=event.id)
 
+import traceback
+
 def table_tennis_state(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
-    config = event.table_tennis_config
+    try:
+        event = get_object_or_404(Event, id=event_id)
+        config = event.table_tennis_config
+        players = list(TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position'))
 
-    players_qs = TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position')
-    players = list(players_qs)  # ✅ convert to list so .index() works
+        # Count how many players have finished
+        finished_count = sum(p.has_finished for p in players)
 
-    data = []
-    for p in players:
-        data.append({
-            'id': p.id,
-            'username': p.participant.username,
-            'games_won': p.games_won,
-            'has_finished': p.has_finished,
-            'finish_rank': p.finish_rank,
-            'points_awarded': p.points_awarded,
-            'is_playing': not p.has_finished and players.index(p) < 2,
-            'is_next': not p.has_finished and players.index(p) == 2,
+        # Dynamically count how many point-places are awarded
+        points_fields = [
+            config.points_first,
+            config.points_second,
+            config.points_third,
+            config.points_fourth,
+            config.points_fifth,
+            config.points_sixth,
+        ]
+        places_awarded = sum(1 for points in points_fields if points > 0)
+
+        game_complete = finished_count >= places_awarded
+
+        data = []
+        for p in players:
+            data.append({
+                'id': p.id,
+                'username': p.participant.username,
+                'games_won': p.games_won,
+                'has_finished': p.has_finished,
+                'finish_rank': p.finish_rank,
+                'points_awarded': p.points_awarded,
+                'is_playing': not p.has_finished and players.index(p) < 2,
+                'is_next': not p.has_finished and players.index(p) == 2,
+            })
+
+        return JsonResponse({
+            'game_complete': game_complete,
+            'players': data,
         })
 
-    game_complete = sum(p.has_finished for p in players) >= config.players_to_finish
-
-    return JsonResponse({
-        'game_complete': game_complete,
-        'players': data,
-    })
+    except Exception as e:
+        return HttpResponseServerError("Error: " + str(e))
 
 def pool_league_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
