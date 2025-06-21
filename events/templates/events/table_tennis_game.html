@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -14,9 +15,6 @@
       Winner Stays On<br>Target Wins: {{ config.target_wins }}
     </p>
   </div>
-  <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
-    <i class="bi bi-bar-chart-fill fs-1"></i>
-  </a>
 </div>
 
 {% if not game_complete and players|length >= 2 %}

@@ -13,6 +13,38 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}plum-theme{% endblock %}">
+    {% if event and event.has_started %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-bold text-accent" href="#">
+        </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks" aria-controls="navLinks" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navLinks">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link text-accent" href="{% url 'live_leaderboard' event.code %}">🏆 Leaderboard</a>
+          </li>
+          {% for game_code in event.selected_games %}
+            {% if game_code == "mini_golf" %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'my_golf_score_entry' event.code %}">⛳️ Mini Golf</a></li>
+            {% elif game_code == "table_tennis" %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'table_tennis_game_view' event.id %}">🏓 Table Tennis</a></li>
+            {% elif game_code == "pool_league" %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'pool_league_view' event.id %}">🎱 Pool</a></li>
+            {% elif game_code == "e_darts" %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'enter_edarts_results' event.id %}">🎯 E-Darts</a></li>
+            {% elif game_code == "killer_pool" %}
+              <li class="nav-item"><a class="nav-link" href="{% url 'killer_game' event.id %}">💀 Killer</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</nav>
 
     <div class="container py-4">
         {% block content %}
@@ -54,4 +86,5 @@
     </script>
 
 </body>
+
 </html>

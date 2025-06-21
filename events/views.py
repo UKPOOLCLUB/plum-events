@@ -638,7 +638,7 @@ def enter_edarts_results(request, event_id):
 
     # ✅ Readonly if all groups are submitted
     readonly = all(group.submitted for group in groups)
-    is_host = event.host == participant.user
+    is_host = event.host == participant.username
 
     # ✅ Scorers per group
     scorers = {

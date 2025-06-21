@@ -15,9 +15,6 @@
     <h2 class="mb-0">Mini-Golf Scorecard</h2>
     <p class="text-light mb-0">Scorekeeper: <strong>{{ scorekeeper.username }}</strong></p>
   </div>
-  <a href="{% url 'live_leaderboard' event.code %}" class="text-decoration-none" title="Return to leaderboard">
-    <i class="bi bi-bar-chart-fill fs-1"></i>
-  </a>
 </div>
 
 {% if scorecard.submitted %}
