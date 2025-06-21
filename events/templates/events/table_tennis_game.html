@@ -8,9 +8,16 @@
   document.body.dataset.pollingUrl = "{% url 'table_tennis_state' event.id %}";
 </script>
 
-<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+<style>
+  .tt-header {
+    color: #00FFAB;
+    text-shadow: 0 0 6px #00FFAB;
+  }
+</style>
+
+<div class="text-center mb-2">
   <div>
-    <h2 class="mb-0">Table Tennis</h2>
+    <h2 class="text-light fw-semibold mb-1">🏓 Table Tennis</h2>
     <p class="mb-0 text-white-50 small fw-semibold">
       Winner Stays On<br>Target Wins: {{ config.target_wins }}
     </p>
