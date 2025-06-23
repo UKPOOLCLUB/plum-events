@@ -219,31 +219,33 @@ def table_tennis_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     config = event.table_tennis_config
 
-    # Active players (not finished)
-    players = TableTennisPlayer.objects.filter(
+    # Active players
+    active_players = TableTennisPlayer.objects.filter(
         event=event,
         has_finished=False
     ).order_by('queue_position')
 
-    # All players (used for leaderboard)
-    finished = TableTennisPlayer.objects.filter(
+    # Finished players, in order of finish
+    finished_players = TableTennisPlayer.objects.filter(
         event=event,
         has_finished=True
     ).order_by('finish_rank')
 
-    all_players = list(finished) + list(players)
+    # Show finishers first, then current/active players
+    all_players = list(finished_players) + list(active_players)
 
     # Determine if the game is complete (e.g., 6 players have finished)
-    game_complete = finished.count() >= 6
+    game_complete = finished_players.count() >= 6
 
     context = {
         'event': event,
-        'players': players,
+        'players': active_players,
         'all_players': all_players,
         'config': config,
         'game_complete': game_complete,
     }
     return render(request, 'events/table_tennis_game.html', context)
+
 
 def submit_table_tennis_result(request, event_id, winner_id):
     event = get_object_or_404(Event, id=event_id)
