@@ -43,43 +43,40 @@
 <!-- Action Buttons -->
 {% if not killer.is_complete %}
   <div class="col-12 col-md-6">
-    {% if request.user == event.host or request.user.is_superuser %}
+    {% if request.user == event.host or request.user.is_superuser or participant.id == current_player.participant.id %}
       <form method="post" action="{% url 'killer_submit_turn' event.id %}">
-  {% csrf_token %}
-  <div class="killer-action-grid text-center mb-2">
+        {% csrf_token %}
+        <div class="killer-action-grid text-center mb-2">
 
-  <button name="action" value="successful_pot" class="btn btn-success killer-action-btn">
-    ✅ Pot
-  </button>
+          <button name="action" value="successful_pot" class="btn btn-success killer-action-btn">
+            ✅ Pot
+          </button>
 
-  <button name="action" value="add_life" class="btn btn-warning killer-action-btn">
-    🎱 Add Life
-  </button>
+          <button name="action" value="add_life" class="btn btn-warning killer-action-btn">
+            🎱 Add Life
+          </button>
 
-  <button name="action" value="lose_one_life" class="btn btn-danger killer-action-btn">
-    ❌ Lose 1
-  </button>
+          <button name="action" value="lose_one_life" class="btn btn-danger killer-action-btn">
+            ❌ Lose 1
+          </button>
 
-  <button name="action" value="lose_two_lives" class="btn btn-danger killer-action-btn">
-    ❌❌ Lose 2
-  </button>
+          <button name="action" value="lose_two_lives" class="btn btn-danger killer-action-btn">
+            ❌❌ Lose 2
+          </button>
 
-  <button name="action" value="move_back" class="btn btn-secondary killer-action-btn">
-    ⬅️ Back
-  </button>
+          <button name="action" value="move_back" class="btn btn-secondary killer-action-btn">
+            ⬅️ Back
+          </button>
 
-  <button name="action" value="move_forward" class="btn btn-secondary killer-action-btn">
-    ➡️ Next
-  </button>
+          <button name="action" value="move_forward" class="btn btn-secondary killer-action-btn">
+            ➡️ Next
+          </button>
 
-</div>
-
-</form>
-
+        </div>
+      </form>
     {% endif %}
   </div>
 {% endif %}
-
 
     <!-- Player List -->
     <div class="col-12 col-md-6">

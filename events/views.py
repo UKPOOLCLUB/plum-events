@@ -719,7 +719,8 @@ def killer_game_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     killer = get_object_or_404(Killer, event=event)
     players = KillerPlayer.objects.filter(killer_game=killer).order_by('turn_order')
-
+    participant_id = request.session.get('participant_id')
+    participant = get_object_or_404(Participant, id=participant_id, event=event)
     current_player = killer.get_current_player()
 
     # ✅ Get next player (skipping eliminated)
@@ -734,6 +735,7 @@ def killer_game_view(request, event_id):
 
     context = {
         'event': event,
+        'participant': participant,
         'killer': killer,
         'players': players,
         'current_player': current_player,
@@ -747,14 +749,19 @@ def killer_game_view(request, event_id):
 @require_POST
 def killer_submit_turn(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-
-    if request.user != event.host and not request.user.is_superuser:
-        return HttpResponseForbidden("Only the host can update the Killer game.")
-
     killer = get_object_or_404(Killer, event=event_id)
     current_player = killer.get_current_player()
-    action = request.POST.get('action')
+    participant_id = request.session.get('participant_id')
 
+    # Permission check
+    is_host = request.user == event.host
+    is_superuser = request.user.is_superuser
+    is_current_player = participant_id == str(current_player.participant.id)
+
+    if not (is_host or is_superuser or is_current_player):
+        return HttpResponseForbidden("Only the host, superuser, or current player can update the Killer game.")
+
+    action = request.POST.get('action')
     advance_turn = True  # Only advance if not eliminated
 
     if action == "successful_pot":

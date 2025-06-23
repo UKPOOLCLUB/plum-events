@@ -44,7 +44,7 @@
         <h4 class="text-white fw-bold mb-2">{{ players.1.participant.username }}</h4>
         <form class="win-button-form" method="post" action="{% url 'submit_table_tennis_result' event.id players.1.id %}">
           {% csrf_token %}
-          <button type="submit" class="btn btn-outline-success">🏆 Wins</button>
+          <button type="submit" class="btn btn-outline-success">🏆 Won 🏆</button>
         </form>
       </div>
   </div>
