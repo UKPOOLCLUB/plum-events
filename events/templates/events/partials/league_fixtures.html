@@ -1,43 +1,71 @@
-<h4 class="mt-5 mb-3 text-accent">🎯 Your Fixtures</h4>
+<h4 class="mt-5 mb-3 text-accent text-center">🎯 Your Fixtures</h4>
 
-<table class="table table-striped table-bordered text-center">
-  <thead>
-    <tr>
-      <th>Opponent</th>
-      <th>Status</th>
-      <th>Submit Result</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for match in matches %}
+<style>
+  .fixtures-table th, .fixtures-table td {
+    vertical-align: middle;
+  }
+  .status-badge {
+    font-weight: 600;
+    padding: 0.3em 0.6em;
+    border-radius: 0.4em;
+    display: inline-block;
+  }
+  .status-win {
+    background-color: #19875422;
+    color: #28a745;
+  }
+  .status-loss {
+    background-color: #dc354522;
+    color: #dc3545;
+  }
+  .status-pending {
+    background-color: #ffc10722;
+    color: #ffc107;
+  }
+  .submit-result-form .btn {
+    min-width: 80px;
+  }
+</style>
+
+<div class="table-responsive">
+  <table class="table table-dark table-striped table-bordered text-center fixtures-table">
+    <thead class="table-light text-dark">
       <tr>
-        <td>{{ match.opponent.participant.username }}</td>
-        <td>
-          {% if match.completed %}
-            {% if match.winner == current_player %}
-              <span class="text-success">✅ Win</span>
-            {% else %}
-              <span class="text-danger">❌ Loss</span>
-            {% endif %}
-          {% else %}
-            <span class="text-warning">Pending</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if not match.completed %}
-            <form method="post" action="{% url 'submit_pool_match_result' %}" class="submit-result-form d-flex justify-content-around">
-              {% csrf_token %}
-              <input type="hidden" name="match_id" value="{{ match.id }}">
-              <input type="hidden" name="player_id" value="{{ current_player.participant.id }}">
-              <button type="button" class="btn btn-success btn-sm submit-button" data-result="win">✅ I Won</button>
-              <button type="button" class="btn btn-danger btn-sm submit-button" data-result="loss">❌ I Lost</button>
-            </form>
-
-          {% else %}
-            –
-          {% endif %}
-        </td>
+        <th>Opponent</th>
+        <th>Status</th>
+        <th>Submit Result</th>
       </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      {% for match in matches %}
+        <tr>
+          <td class="fw-semibold">{{ match.opponent.participant.username }}</td>
+          <td>
+            {% if match.completed %}
+              {% if match.winner == current_player %}
+                <span class="status-badge status-win">✅ Win</span>
+              {% else %}
+                <span class="status-badge status-loss">❌ Loss</span>
+              {% endif %}
+            {% else %}
+              <span class="status-badge status-pending">⏳ Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if not match.completed %}
+              <form method="post" action="{% url 'submit_pool_match_result' %}" class="submit-result-form d-flex justify-content-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="match_id" value="{{ match.id }}">
+                <input type="hidden" name="player_id" value="{{ current_player.participant.id }}">
+                <button type="button" class="btn btn-success btn-sm submit-button" data-result="win">✅ I Won</button>
+                <button type="button" class="btn btn-danger btn-sm submit-button" data-result="loss">❌ I Lost</button>
+              </form>
+            {% else %}
+              <span class="text-muted">–</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

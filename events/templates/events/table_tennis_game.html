@@ -117,33 +117,49 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  function updateGameView(data) {
-    const tableBody = document.querySelector('tbody');
-    if (!tableBody) return;
+function updateGameView(data) {
+  const tableBody = document.querySelector('tbody');
+  if (!tableBody) return;
 
-    tableBody.innerHTML = '';
+  tableBody.innerHTML = '';
 
-    data.players.forEach(p => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="fw-semibold">${p.username}</td>
-        <td>${p.games_won}</td>
-        <td>
-          ${p.has_finished ? `<span class="badge bg-secondary">Finished (${ordinal(p.finish_rank)})</span>` :
-            p.is_playing ? `<span class="badge bg-warning text-dark">Playing</span>` :
-            p.is_next ? `<span class="badge bg-info text-dark">Up Next</span>` :
-            `<span class="badge bg-light text-dark">Waiting</span>`}
-        </td>
-        <td>${p.points_awarded}</td>
-      `;
-      tableBody.appendChild(tr);
+  // Sort players when game is complete
+  let players = data.players;
+  if (data.game_complete) {
+    players = [...players].sort((a, b) => {
+      // Put finished players first by rank, then the rest
+      if (a.has_finished && b.has_finished) {
+        return a.finish_rank - b.finish_rank;
+      }
+      if (a.has_finished) return -1;
+      if (b.has_finished) return 1;
+      return 0;
     });
-
-    if (data.game_complete) {
-      document.querySelector('.alert')?.classList.remove('d-none');
-      document.querySelector('.d-flex.justify-content-center')?.classList.add('d-none');
-    }
   }
+
+  players.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="fw-semibold">${p.username}</td>
+      <td>${p.games_won}</td>
+      <td>
+        ${p.has_finished ? `<span class="badge bg-secondary">Finished (${ordinal(p.finish_rank)})</span>` :
+          data.game_complete ? `` :
+          p.is_playing ? `<span class="badge bg-warning text-dark">Playing</span>` :
+          p.is_next ? `<span class="badge bg-info text-dark">Up Next</span>` :
+          `<span class="badge bg-light text-dark">Waiting</span>`}
+      </td>
+      <td>${p.points_awarded}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+
+  if (data.game_complete) {
+    document.querySelector('.alert')?.classList.remove('d-none');
+    document.querySelector('.d-flex.justify-content-center')?.classList.add('d-none');
+  }
+}
+
 
   function ordinal(n) {
     return n + (["st", "nd", "rd"][((n + 90) % 100 - 10) % 10 - 1] || "th");
