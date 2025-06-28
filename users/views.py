@@ -14,6 +14,47 @@ from django.db.models import Sum, Count
 from random import shuffle
 
 
+def landing_page(request):
+    return render(request, 'users/landing.html')
+
+
+EVENT_PRICING = {
+    'Pool League and Killer': 15,
+    'Mini Golf': 20,
+    'E-darts Tournament': 15,
+    'Darts League': 10,
+    'Bowling': 20,
+    'Poker': 10,
+    'Shuffle Board': 15,
+    'Table Tennis': 10,
+    'Snooker': 15,
+    'Boule': 10,
+}
+
+
+def get_quote(request):
+    total = None
+    if request.method == 'POST':
+        group_size = int(request.POST.get('group_size', 0))
+        selected_events = request.POST.getlist('events')
+
+        event_total = sum(EVENT_PRICING[event] for event in selected_events if event in EVENT_PRICING)
+        total = event_total * group_size + 25  # admin fee
+
+        context = {
+            'group_size': group_size,
+            'selected_events': selected_events,
+            'total': total,
+            'event_pricing': EVENT_PRICING
+        }
+    else:
+        context = {
+            'event_pricing': EVENT_PRICING
+        }
+
+    return render(request, 'users/get_quote.html', context)
+
+
 def enter_event_code(request):
     error = None
 

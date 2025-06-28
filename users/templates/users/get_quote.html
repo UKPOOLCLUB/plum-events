@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+  <h1 class="fw-bold mb-4">Get a Quick Quote</h1>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="group_size" class="form-label">Number of Players</label>
+      <input type="number" class="form-control" id="group_size" name="group_size" value="{{ group_size|default:'' }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Select Events</label>
+        {% for name, price in event_pricing.items %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="events" value="{{ name }}" id="{{ name }}"
+              {% if name in selected_events %}checked{% endif %}>
+            <label class="form-check-label" for="{{ name }}">{{ name }} (£{{ price }})</label>
+          </div>
+        {% endfor %}
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">Calculate Quote</button>
+  </form>
+
+  {% if total %}
+  <div class="mt-4 alert alert-success">
+    <h4 class="fw-bold">Total Cost: £{{ total }}</h4>
+    <p>Includes £25 admin fee for {{ group_size }} players.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
