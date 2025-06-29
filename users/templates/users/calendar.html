@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="d-flex justify-content-start mb-3 mt-3">
+  <a href="{% url 'enter_event_code' %}">
+    <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
+  </a>
+</div>
+
+<div class="container py-5 text-white">
+  <h2 class="mb-4">Choose Your Date</h2>
+
+  <input type="text" id="datePicker" class="form-control" placeholder="Pick a date..." readonly>
+
+  <div class="mt-4" id="dateMessage"></div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    fetch("{% url 'calendar_data' %}")
+      .then(res => res.json())
+      .then(data => {
+        const disabledDates = data.full.concat(data.blackout);
+
+        flatpickr("#datePicker", {
+          dateFormat: "Y-m-d",
+          disable: disabledDates,
+          onChange: function(selectedDates, dateStr) {
+            const msgBox = document.getElementById('dateMessage');
+            if (dateStr) {
+              msgBox.innerHTML = `<a href="/users/book/${dateStr}/" class="btn btn-success mt-3">Continue with ${dateStr}</a>`;
+            }
+          }
+        });
+      });
+  });
+</script>
+{% endblock %}

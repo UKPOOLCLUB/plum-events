@@ -17,3 +17,16 @@ class Participant(models.Model):
 
     def __str__(self):
         return self.username
+
+
+class EventAvailability(models.Model):
+    date = models.DateField(unique=True)
+    status_choices = [
+        ('available', 'Available'),
+        ('full', 'Fully Booked'),
+        ('blackout', 'Blackout Date'),
+    ]
+    status = models.CharField(max_length=10, choices=status_choices, default='available')
+
+    def __str__(self):
+        return f"{self.date} – {self.get_status_display()}"

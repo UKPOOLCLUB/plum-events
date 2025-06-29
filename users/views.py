@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from events.models import Event, GAME_CHOICES
-from .models import Participant
+from .models import Participant, EventAvailability
 from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
@@ -11,6 +11,7 @@ from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDar
 from events.models import Killer, KillerPlayer, KillerConfig
 from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
 from django.db.models import Sum, Count
+from datetime import date, timedelta
 from random import shuffle
 
 
@@ -31,6 +32,18 @@ EVENT_PRICING = {
     'Boule': 10,
 }
 
+EVENT_CHOICES = [
+    {"name": "Pool League and Killer", "icon": "fa-circle-dot text-warning"},
+    {"name": "Mini Golf", "icon": "fa-golf-ball-tee text-success"},
+    {"name": "E-darts Tournament", "icon": "fa-bullseye text-danger"},
+    {"name": "Darts League", "icon": "fa-bullseye text-info"},
+    {"name": "Bowling", "icon": "fa-bowling-ball text-primary"},
+    {"name": "Poker", "icon": "fa-club text-warning"},
+    {"name": "Shuffle Board", "icon": "fa-table-tennis-paddle-ball text-secondary"},
+    {"name": "Table Tennis", "icon": "fa-table-tennis-paddle-ball text-danger"},
+    {"name": "Snooker", "icon": "fa-circle text-info"},
+    {"name": "Boule", "icon": "fa-bowling-ball text-success"},
+]
 
 def get_quote(request):
     total = None
@@ -45,14 +58,40 @@ def get_quote(request):
             'group_size': group_size,
             'selected_events': selected_events,
             'total': total,
-            'event_pricing': EVENT_PRICING
+            'event_pricing': EVENT_PRICING,
+            'events_with_icons': EVENT_CHOICES,
         }
     else:
         context = {
-            'event_pricing': EVENT_PRICING
+            'event_pricing': EVENT_PRICING,
+            'events_with_icons': EVENT_CHOICES,
         }
 
     return render(request, 'users/get_quote.html', context)
+
+
+def view_calendar(request):
+    return render(request, 'users/calendar.html')
+
+def calendar_page(request):
+    today = date.today()
+    available_dates = [today + timedelta(days=i) for i in range(1, 31)]  # next 30 days
+
+    context = {
+        'available_dates': available_dates
+    }
+    return render(request, 'users/calendar.html', context)
+
+
+def calendar_data(request):
+    today = date.today()
+    future_dates = [today + timedelta(days=i) for i in range(90)]  # show 3 months
+
+    availability = EventAvailability.objects.filter(date__in=future_dates)
+    full = [str(a.date) for a in availability if a.status == 'full']
+    blackout = [str(a.date) for a in availability if a.status == 'blackout']
+
+    return JsonResponse({'full': full, 'blackout': blackout})
 
 
 def enter_event_code(request):

@@ -2,35 +2,93 @@
 {% load static %}
 
 {% block content %}
-<div class="container py-5">
-  <h1 class="fw-bold mb-4">Get a Quick Quote</h1>
-  <form method="post">
-    {% csrf_token %}
-    <div class="mb-3">
-      <label for="group_size" class="form-label">Number of Players</label>
-      <input type="number" class="form-control" id="group_size" name="group_size" value="{{ group_size|default:'' }}" required>
-    </div>
 
-    <div class="mb-3">
-      <label class="form-label">Select Events</label>
-        {% for name, price in event_pricing.items %}
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="events" value="{{ name }}" id="{{ name }}"
-              {% if name in selected_events %}checked{% endif %}>
-            <label class="form-check-label" for="{{ name }}">{{ name }} (£{{ price }})</label>
-          </div>
-        {% endfor %}
-
-    </div>
-
-    <button type="submit" class="btn btn-primary">Calculate Quote</button>
-  </form>
-
-  {% if total %}
-  <div class="mt-4 alert alert-success">
-    <h4 class="fw-bold">Total Cost: £{{ total }}</h4>
-    <p>Includes £25 admin fee for {{ group_size }} players.</p>
-  </div>
-  {% endif %}
+<div class="d-flex justify-content-start mb-3 mt-3">
+  <a href="{% url 'enter_event_code' %}">
+    <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
+  </a>
 </div>
+
+<div class="container py-3">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="bg-dark border rounded p-4">
+        <!-- Logo here -->
+
+        <h1 class="text-white fw-bold mb-4 text-center">Get a Quick Quote</h1>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3 d-flex align-items-center">
+            <label for="group_size" class="form-label text-white me-3 mb-0">Number of Players</label>
+            <input type="number" class="form-control" style="width: 80px;" id="group_size" name="group_size"
+              value="{{ group_size|default:'8' }}" required min="6" max="16">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-white">Select Your Events</label>
+            {% for name, price in event_pricing.items %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="events" value="{{ name }}" id="{{ name }}"
+                  {% if name in selected_events %}checked{% endif %}>
+                <label class="form-check-label text-white" for="{{ name }}">{{ name }}</label>
+              </div>
+            {% endfor %}
+          </div>
+
+          <p class="text-muted small mt-2">
+            Each event takes roughly <strong>1.5 hours</strong>. If venues are more than a 10-minute walk apart, travel time is included.
+          </p>
+
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary px-4">Get My Quote</button>
+          </div>
+        </form>
+
+        {% if total %}
+          <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
+            <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
+
+            <p>Based on {{ group_size }} players and your chosen events.</p>
+            <a href="{% url 'calendar_page' %}" class="btn btn-success mt-3">View Available Dates</a>
+          </div>
+
+            <p class="mt-4 text-white small text-center fst-italic">
+              Each event will take roughly 1.5 hours. Travel between venues is included if more than a 10-minute walk.
+            </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+
+body {
+  background-color: #111;
+  color: white;
+}
+
+.form-check-label {
+  cursor: pointer;
+}
+
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form');
+    const checkboxes = document.querySelectorAll('input[name="events"]');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function (e) {
+      const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+      if (selectedCount < 3 || selectedCount > 6) {
+        e.preventDefault();
+        alert('Please select between 3 and 6 events.');
+      }
+    });
+  });
+</script>
+
 {% endblock %}
