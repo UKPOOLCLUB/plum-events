@@ -3,20 +3,18 @@
 
 {% block content %}
 
-<div class="d-flex justify-content-start mb-3 mt-3">
-  <a href="{% url 'landing_page' %}">
-    <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
-  </a>
-</div>
-
 <div class="container py-3">
-  <div class="row justify-content-center">
+  <div class="d-flex justify-content-start mb-3 mt-3">
+    <a href="{% url 'landing_page' %}">
+      <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
+    </a>
+  </div>
+
+  <!-- QUOTE SECTION: Front and center -->
+  <div class="row justify-content-center mb-4">
     <div class="col-md-8 col-lg-6">
-      <div class="bg-dark border rounded p-4">
-        <!-- Logo here -->
-
+      <div class="bg-dark border rounded p-4 shadow">
         <h1 class="text-white fw-bold mb-4 text-center">Get a Quick Quote</h1>
-
         <form method="post">
           {% csrf_token %}
           <div class="mb-3 d-flex align-items-center">
@@ -45,49 +43,47 @@
           </div>
         </form>
 
-{% if total %}
-  <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
-    <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
-    <p>Based on {{ group_size }} players and your chosen events.</p>
-    <form method="post" action="{% url 'get_quote' %}">
-      {% csrf_token %}
-      <input type="hidden" name="group_size" value="{{ group_size }}">
-      {% for event in selected_events %}
-        <input type="hidden" name="events" value="{{ event }}">
-      {% endfor %}
-      <input type="hidden" name="total" value="{{ total }}">
-      <input type="hidden" name="confirm_quote" value="1">
-      <button type="submit" class="btn btn-success mt-3">Continue to calendar</button>
-    </form>
-  </div>
-            <p class="mt-4 text-white small text-center fst-italic">
-              Each event will take roughly 1.5 hours. Travel between venues is included if more than a 10-minute walk.
-            </p>
+        {% if total %}
+          <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
+            <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
+            <p>Based on {{ group_size }} players and your chosen events.</p>
+            <form method="post" action="{% url 'get_quote' %}">
+              {% csrf_token %}
+              <input type="hidden" name="group_size" value="{{ group_size }}">
+              {% for event in selected_events %}
+                <input type="hidden" name="events" value="{{ event }}">
+              {% endfor %}
+              <input type="hidden" name="total" value="{{ total }}">
+              <input type="hidden" name="confirm_quote" value="1">
+              <button type="submit" class="btn btn-success mt-3">Continue to calendar</button>
+            </form>
+          </div>
+          <p class="mt-4 text-white small text-center fst-italic">
+            Each event will take roughly 1.5 hours. Travel between venues is included if more than a 10-minute walk.
+          </p>
         {% endif %}
       </div>
     </div>
   </div>
+
+  <!-- You can add the marketing/features section **below** this -->
+
 </div>
 
 <style>
-
 body {
   background-color: #111;
   color: white;
 }
-
 .form-check-label {
   cursor: pointer;
 }
-
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('form');
     const checkboxes = document.querySelectorAll('input[name="events"]');
-    const submitButton = form.querySelector('button[type="submit"]');
-
     form.addEventListener('submit', function (e) {
       const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
       if (selectedCount < 3 || selectedCount > 6) {

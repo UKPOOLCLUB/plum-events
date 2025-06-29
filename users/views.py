@@ -191,11 +191,14 @@ def booking_summary(request):
         return redirect('calendar_page')
 
     context = {
-        'group_size': group_size,
-        'selected_events': selected_events,
-        'quote_total': quote_total,
-        'event_date': event_date,
-        'start_time': start_time,
+        'booking': {
+            'group_size': group_size,
+            'selected_events': selected_events,
+            'quote_total': quote_total,
+            'event_date': event_date,
+            'start_time': start_time,
+        },
+        'personal': True,  # or however you want to set this
     }
     return render(request, 'users/booking_summary.html', context)
 
