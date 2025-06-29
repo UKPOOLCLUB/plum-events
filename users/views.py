@@ -177,6 +177,26 @@ def confirm_booking(request):
     # If GET or missing data, redirect to calendar
     return redirect('calendar_page')
 
+def booking_summary(request):
+    group_size = request.session.get('group_size')
+    selected_events = request.session.get('selected_events')
+    quote_total = request.session.get('quote_total')
+    event_date = request.session.get('event_date')
+    start_time = request.session.get('start_time')
+
+    # Redirect if any info is missing
+    if not all([group_size, selected_events, quote_total, event_date, start_time]):
+        return redirect('calendar_page')
+
+    context = {
+        'group_size': group_size,
+        'selected_events': selected_events,
+        'quote_total': quote_total,
+        'event_date': event_date,
+        'start_time': start_time,
+    }
+    return render(request, 'users/booking_summary.html', context)
+
 
 def enter_event_code(request):
     error = None
