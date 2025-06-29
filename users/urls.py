@@ -14,5 +14,6 @@ urlpatterns = [
     path('leaderboard/state/<int:event_id>/', views.leaderboard_state, name='leaderboard_state'),
     path('calendar/', views.calendar_page, name='calendar_page'),
     path('calendar/data/', views.calendar_data, name='calendar_data'),
+    path('booking/confirm/', views.confirm_booking, name='confirm_booking'),
 
 ]

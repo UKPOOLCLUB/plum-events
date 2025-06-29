@@ -151,6 +151,32 @@ def get_available_start_times(selected_date, num_events):
 
     return available_times
 
+# users/views.py
+
+def confirm_booking(request):
+    if request.method == 'POST':
+        group_size = request.session.get('group_size')
+        selected_events = request.session.get('selected_events')
+        quote_total = request.session.get('quote_total')
+        event_date = request.POST.get('event_date')
+        start_time = request.POST.get('start_time')
+        # Optionally, validate all these fields
+
+        # Create the booking
+        booking = Booking.objects.create(
+            group_size=group_size,
+            selected_events=selected_events,
+            quote_total=quote_total,
+            event_date=event_date,
+            start_time=start_time
+        )
+        # Clear session if you want to reset for next booking
+
+        return render(request, 'users/booking_confirmed.html', {'booking': booking})
+
+    # If GET or missing data, redirect to calendar
+    return redirect('calendar_page')
+
 
 def enter_event_code(request):
     error = None
