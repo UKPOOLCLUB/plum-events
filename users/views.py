@@ -91,21 +91,23 @@ def calendar_page(request):
     selected_events = request.session.get('selected_events')
     quote_total = request.session.get('quote_total')
 
-    print("DEBUG: calendar_page - group_size:", group_size)
-    print("DEBUG: calendar_page - selected_events:", selected_events)
-    print("DEBUG: calendar_page - quote_total:", quote_total)
-
-    # Early exit: if not set, redirect back to quote page!
     if not group_size or not selected_events:
         return redirect('get_quote')
 
     if request.method == 'POST':
         selected_date_str = request.POST.get('event_date')
         selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-        num_events = len(selected_events)  # or use another value if needed
+        num_events = len(selected_events)
 
+        # Check if start_time is posted (user clicked Continue)
+        if 'start_time' in request.POST:
+            # Save choices to session for use in summary
+            request.session['event_date'] = selected_date_str
+            request.session['start_time'] = request.POST.get('start_time')
+            return redirect('booking_summary')  # <<< THIS DOES THE REDIRECT
+
+        # Otherwise, just show times for chosen date
         available_times = get_available_start_times(selected_date, num_events)
-
         context = {
             'selected_date': selected_date_str,
             'available_times': available_times,
