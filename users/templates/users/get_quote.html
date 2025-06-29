@@ -4,7 +4,7 @@
 {% block content %}
 
 <div class="d-flex justify-content-start mb-3 mt-3">
-  <a href="{% url 'enter_event_code' %}">
+  <a href="{% url 'landing_page' %}">
     <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
   </a>
 </div>
@@ -45,14 +45,21 @@
           </div>
         </form>
 
-        {% if total %}
-          <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
-            <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
-
-            <p>Based on {{ group_size }} players and your chosen events.</p>
-            <a href="{% url 'calendar_page' %}" class="btn btn-success mt-3">View Available Dates</a>
-          </div>
-
+{% if total %}
+  <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
+    <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
+    <p>Based on {{ group_size }} players and your chosen events.</p>
+    <form method="post" action="{% url 'get_quote' %}">
+      {% csrf_token %}
+      <input type="hidden" name="group_size" value="{{ group_size }}">
+      {% for event in selected_events %}
+        <input type="hidden" name="events" value="{{ event }}">
+      {% endfor %}
+      <input type="hidden" name="total" value="{{ total }}">
+      <input type="hidden" name="confirm_quote" value="1">
+      <button type="submit" class="btn btn-success mt-3">Continue to calendar</button>
+    </form>
+  </div>
             <p class="mt-4 text-white small text-center fst-italic">
               Each event will take roughly 1.5 hours. Travel between venues is included if more than a 10-minute walk.
             </p>

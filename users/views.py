@@ -11,7 +11,7 @@ from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDar
 from events.models import Killer, KillerPlayer, KillerConfig
 from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
 from django.db.models import Sum, Count
-from datetime import date, timedelta
+from datetime import date, timedelta, time, datetime
 from random import shuffle
 
 
@@ -47,26 +47,39 @@ EVENT_CHOICES = [
 
 def get_quote(request):
     total = None
+    group_size = None
+    selected_events = []
+    show_continue = False
+
     if request.method == 'POST':
         group_size = int(request.POST.get('group_size', 0))
         selected_events = request.POST.getlist('events')
+        total = request.POST.get('total')
+        confirm = request.POST.get('confirm_quote')
 
+        # If the user clicked "Continue to calendar", save and redirect
+        if confirm == "1":
+            print("DEBUG: Saving to session - group_size:", group_size)
+            print("DEBUG: Saving to session - selected_events:", selected_events)
+            print("DEBUG: Saving to session - quote_total:", total)
+            request.session['group_size'] = group_size
+            request.session['selected_events'] = selected_events
+            request.session['quote_total'] = total
+            return redirect('calendar_page')
+
+        # Else: Just show the quote, do not redirect yet
         event_total = sum(EVENT_PRICING[event] for event in selected_events if event in EVENT_PRICING)
         total = event_total * group_size + 25  # admin fee
+        show_continue = True
 
-        context = {
-            'group_size': group_size,
-            'selected_events': selected_events,
-            'total': total,
-            'event_pricing': EVENT_PRICING,
-            'events_with_icons': EVENT_CHOICES,
-        }
-    else:
-        context = {
-            'event_pricing': EVENT_PRICING,
-            'events_with_icons': EVENT_CHOICES,
-        }
-
+    context = {
+        'group_size': group_size,
+        'selected_events': selected_events,
+        'total': total,
+        'event_pricing': EVENT_PRICING,
+        'events_with_icons': EVENT_CHOICES,
+        'show_continue': show_continue,
+    }
     return render(request, 'users/get_quote.html', context)
 
 
@@ -74,24 +87,75 @@ def view_calendar(request):
     return render(request, 'users/calendar.html')
 
 def calendar_page(request):
-    today = date.today()
-    available_dates = [today + timedelta(days=i) for i in range(1, 31)]  # next 30 days
+    group_size = request.session.get('group_size')
+    selected_events = request.session.get('selected_events')
+    quote_total = request.session.get('quote_total')
+
+    print("DEBUG: calendar_page - group_size:", group_size)
+    print("DEBUG: calendar_page - selected_events:", selected_events)
+    print("DEBUG: calendar_page - quote_total:", quote_total)
+
+    # Early exit: if not set, redirect back to quote page!
+    if not group_size or not selected_events:
+        return redirect('get_quote')
+
+    if request.method == 'POST':
+        selected_date_str = request.POST.get('event_date')
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+        num_events = len(selected_events)  # or use another value if needed
+
+        available_times = get_available_start_times(selected_date, num_events)
+
+        context = {
+            'selected_date': selected_date_str,
+            'available_times': available_times,
+            'group_size': group_size,
+            'selected_events': selected_events,
+            'quote_total': quote_total,
+        }
+        return render(request, 'users/calendar.html', context)
 
     context = {
-        'available_dates': available_dates
+        'group_size': group_size,
+        'selected_events': selected_events,
+        'quote_total': quote_total,
     }
     return render(request, 'users/calendar.html', context)
 
 
 def calendar_data(request):
-    today = date.today()
-    future_dates = [today + timedelta(days=i) for i in range(90)]  # show 3 months
+    # All 'available' dates
+    available_qs = EventAvailability.objects.filter(status='available')
+    full_qs = EventAvailability.objects.filter(status='full')
+    blackout_qs = EventAvailability.objects.filter(status='blackout')
 
-    availability = EventAvailability.objects.filter(date__in=future_dates)
-    full = [str(a.date) for a in availability if a.status == 'full']
-    blackout = [str(a.date) for a in availability if a.status == 'blackout']
+    available_dates = [d.date.strftime('%Y-%m-%d') for d in available_qs]
+    full_dates = [d.date.strftime('%Y-%m-%d') for d in full_qs]
+    blackout_dates = [d.date.strftime('%Y-%m-%d') for d in blackout_qs]
 
-    return JsonResponse({'full': full, 'blackout': blackout})
+    return JsonResponse({
+        "available": available_dates,
+        "full": full_dates,
+        "blackout": blackout_dates,
+    })
+
+
+def get_available_start_times(selected_date, num_events):
+    day = selected_date.weekday()
+    start_hour = 10 if day < 5 else 11  # Weekday = 10am, Weekend = 11am
+    total_duration = timedelta(minutes=90 * num_events)
+
+    latest_end_time = time(20, 0)
+    latest_start_dt = datetime.combine(selected_date, latest_end_time) - total_duration
+
+    available_times = []
+    current_dt = datetime.combine(selected_date, time(start_hour, 0))
+
+    while current_dt <= latest_start_dt:
+        available_times.append(current_dt.strftime("%H:%M"))
+        current_dt += timedelta(minutes=30)
+
+    return available_times
 
 
 def enter_event_code(request):

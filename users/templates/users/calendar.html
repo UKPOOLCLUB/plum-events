@@ -2,36 +2,73 @@
 {% load static %}
 
 {% block content %}
-
 <div class="d-flex justify-content-start mb-3 mt-3">
-  <a href="{% url 'enter_event_code' %}">
+  <a href="{% url 'landing_page' %}">
     <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
   </a>
 </div>
+<!-- DEBUG: group_size={{ group_size }} selected_events={{ selected_events }} quote_total={{ quote_total }} -->
 
-<div class="container py-5 text-white">
-  <h2 class="mb-4">Choose Your Date</h2>
-
-  <input type="text" id="datePicker" class="form-control" placeholder="Pick a date..." readonly>
-
-  <div class="mt-4" id="dateMessage"></div>
+<div class="card text-dark bg-light mb-4 p-3">
+  <h5>Booking Details</h5>
+  <div><strong>Group size:</strong> {{ group_size }}</div>
+  <div><strong>Selected events:</strong>
+    {% for event in selected_events %}
+      <span class="badge bg-success me-2">{{ event|capfirst }}</span>
+    {% endfor %}
+  </div>
+  <div><strong>Quote total:</strong> £{{ quote_total }}</div>
 </div>
 
+<div class="container py-5 text-white">
+  <h2 class="text-success fw-bold mb-4">Choose Your Date</h2>
+
+  <form method="POST" class="mb-4" id="date-form" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="num_events" value="{{ selected_event_count|default:3 }}">
+    <input type="text"
+           class="form-control mb-3"
+           name="event_date"
+           id="event_date"
+           placeholder="Select a date"
+           required
+           autocomplete="off"
+           value="{{ selected_date|default:'' }}">
+  </form>
+
+  {% if available_times %}
+    <div id="start-time-section" class="mt-4">
+      <label for="start_time" class="form-label text-white">Choose Start Time</label>
+      <select name="start_time" id="start_time" class="form-control" required>
+        {% for time in available_times %}
+          <option value="{{ time }}">{{ time }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" form="date-form" class="btn btn-success mt-3">Continue</button>
+    </div>
+  {% endif %}
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     fetch("{% url 'calendar_data' %}")
       .then(res => res.json())
       .then(data => {
-        const disabledDates = data.full.concat(data.blackout);
-
-        flatpickr("#datePicker", {
+        const disabledDates = (data.full || []).concat(data.blackout || []);
+        flatpickr("#event_date", {
           dateFormat: "Y-m-d",
           disable: disabledDates,
+          minDate: "today",
+          defaultDate: "{{ selected_date|default:'' }}",
           onChange: function(selectedDates, dateStr) {
-            const msgBox = document.getElementById('dateMessage');
-            if (dateStr) {
-              msgBox.innerHTML = `<a href="/users/book/${dateStr}/" class="btn btn-success mt-3">Continue with ${dateStr}</a>`;
-            }
+            // Only auto-submit if we're not already showing times
+            {% if not available_times %}
+              if (dateStr) {
+                document.getElementById('date-form').submit();
+              }
+            {% endif %}
           }
         });
       });
