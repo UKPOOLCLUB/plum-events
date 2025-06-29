@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from events.models import Event, GAME_CHOICES
-from .models import Participant, EventAvailability
+from .models import Participant, EventAvailability, Booking
 from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
