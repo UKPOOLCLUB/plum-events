@@ -123,20 +123,14 @@ def calendar_page(request):
     return render(request, 'users/calendar.html', context)
 
 
+# Example calendar_data view
 def calendar_data(request):
-    # All 'available' dates
+    # Only fetch dates with status "available"
     available_qs = EventAvailability.objects.filter(status='available')
-    full_qs = EventAvailability.objects.filter(status='full')
-    blackout_qs = EventAvailability.objects.filter(status='blackout')
-
     available_dates = [d.date.strftime('%Y-%m-%d') for d in available_qs]
-    full_dates = [d.date.strftime('%Y-%m-%d') for d in full_qs]
-    blackout_dates = [d.date.strftime('%Y-%m-%d') for d in blackout_qs]
-
+    print('DEBUG: available_dates:', available_dates)  # Add this for terminal debug!
     return JsonResponse({
         "available": available_dates,
-        "full": full_dates,
-        "blackout": blackout_dates,
     })
 
 

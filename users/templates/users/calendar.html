@@ -13,10 +13,17 @@
   <h5>Booking Details</h5>
   <div><strong>Group size:</strong> {{ group_size }}</div>
   <div><strong>Selected events:</strong>
-    {% for event in selected_events %}
-      <span class="badge bg-success me-2">{{ event|capfirst }}</span>
-    {% endfor %}
-  </div>
+  {% if selected_events %}
+    <ul class="list-unstyled mb-0">
+      {% for event in selected_events %}
+        <li><span class="badge bg-success">{{ event|capfirst }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <span class="text-muted">None selected</span>
+  {% endif %}
+</div>
+
   <div><strong>Quote total:</strong> £{{ quote_total }}</div>
 </div>
 
@@ -56,14 +63,14 @@
     fetch("{% url 'calendar_data' %}")
       .then(res => res.json())
       .then(data => {
-        const disabledDates = (data.full || []).concat(data.blackout || []);
+        const availableDates = data.available || [];
+        console.log('DEBUG availableDates:', availableDates);
         flatpickr("#event_date", {
           dateFormat: "Y-m-d",
-          disable: disabledDates,
+          enable: availableDates,   // <--- ONLY ENABLE THESE DATES!
           minDate: "today",
           defaultDate: "{{ selected_date|default:'' }}",
           onChange: function(selectedDates, dateStr) {
-            // Only auto-submit if we're not already showing times
             {% if not available_times %}
               if (dateStr) {
                 document.getElementById('date-form').submit();
