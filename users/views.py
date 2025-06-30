@@ -21,7 +21,8 @@ from django.conf import settings
 
 
 def landing_page(request):
-    return render(request, 'users/landing.html')
+    form = ContactForm()
+    return render(request, 'users/landing.html', {"form": form})
 
 
 EVENT_PRICING = {

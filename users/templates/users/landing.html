@@ -133,6 +133,114 @@
       .carousel-item img { max-height: 180px; }
     }
   </style>
+
+<style>
+
+  .got-question-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 9999;
+  background: #181818 !important;
+  color: #fff !important;
+  border: 2px solid #17c0eb !important;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 12px 28px;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 20px #18181840;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.got-question-btn:hover, .got-question-btn:focus {
+  background: #17c0eb !important;
+  color: #181818 !important;
+  border-color: #17c0eb !important;
+}
+
+  /* Contact Modal Styles */
+.modal-content.bg-dark {
+  background: #1d1e22 !important;
+  color: #f0f0f0;
+  border-radius: 18px;
+  border: 2px solid #17c0eb;
+  box-shadow: 0 4px 30px #000a;
+}
+
+.modal-header {
+  border-bottom: 1.5px solid #17c0eb;
+}
+
+.modal-title {
+  color: #16e061;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.modal-body label {
+  color: #1df676;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+}
+
+.modal-body input,
+.modal-body textarea {
+  background: #16181b;
+  color: #fff;
+  border: 1.5px solid #17c0eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  width: 100%;
+  padding: 9px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-body input:focus,
+.modal-body textarea:focus {
+  border-color: #16e061;
+  box-shadow: 0 0 0 2px #16e06133;
+  outline: none;
+}
+
+.modal-body textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.btn-success {
+  background: #16e061 !important;
+  color: #181818 !important;
+  font-weight: 700;
+  border-radius: 8px;
+  border: none;
+  padding: 10px 30px;
+  font-size: 1.12rem;
+  letter-spacing: 0.2px;
+  margin-top: 8px;
+  transition: background 0.18s, color 0.18s;
+}
+.btn-success:hover, .btn-success:focus {
+  background: #1df676 !important;
+  color: #181818 !important;
+}
+
+.btn-close-white {
+  filter: invert(1);
+}
+.modal-dialog {
+  max-width: 430px;
+}
+
+  @media (max-width: 600px) {
+  .got-question-btn {
+    right: 12px;
+    bottom: 12px;
+    font-size: 0.98rem;
+    padding: 9px 19px;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -228,6 +336,28 @@
     </div>
   </div>
 </section>
+
+<button type="button" class="btn got-question-btn" data-bs-toggle="modal" data-bs-target="#contactModal">
+  Got a question?
+</button>
+
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contactModalLabel">Contact Us</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="{% url 'contact_us' %}">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-success mt-2">Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 <footer class="text-white py-4 mt-4">
   <div class="container text-center">
