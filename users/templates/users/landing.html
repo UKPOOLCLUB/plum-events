@@ -15,25 +15,45 @@
       background: #16181b;
       border-bottom: 2.5px solid #17c0eb;
       color: #f0f0f0;
-      padding: 3.3rem 2rem 2.1rem 2rem;
+      padding: 2.1rem 1rem 1.5rem 1rem;
       text-align: center;
     }
     .hero img {
-      max-width: 120px;
-      margin-bottom: 10px;
-    }
-    .hero h1 {
-      font-weight: 800;
-      font-size: 2.5rem;
-      color: #16e061;
-      letter-spacing: 0.5px;
+      max-width: 100px;
       margin-bottom: 8px;
     }
-    .hero p {
-      font-size: 1.2rem;
-      color: #f0f0f0;
-      margin-bottom: 26px;
-    }
+  .hero h1 {
+    font-weight: 800;
+    font-size: 2rem;
+    color: #16e061;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .hero p {
+    font-size: 1.05rem;
+    color: #f0f0f0;
+    margin-bottom: 18px;
+  }
+  .hero-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 0;   /* Remove extra spacing */
+  }
+  .hero-btn-group .btn {
+    min-width: 110px;
+    font-size: 1.09rem;
+    padding: 11px 22px;
+    margin: 0;
+  }
+  @media (max-width: 600px) {
+    .hero { padding: 1.2rem 0.6rem 1.1rem 0.6rem; }
+    .hero img { max-width: 70px; }
+    .hero h1 { font-size: 1.18rem; }
+    .hero-btn-group { gap: 8px; }
+    .hero-btn-group .btn { font-size: 1rem; padding: 9px 0; min-width: 98px; }
+  }
     .btn-primary {
       background: #0099ff !important;
       border: none;
@@ -76,6 +96,17 @@
       background: #181818;
       color: #f0f0f0;
     }
+    .section-dark, .bg-dark {
+      padding-top: 2.1rem !important;
+      padding-bottom: 2.1rem !important;
+    }
+
+    @media (max-width: 600px) {
+      .section-dark, .bg-dark {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+      }
+    }
     .section-header {
       color: #16e061;
       font-weight: 800;
@@ -89,7 +120,6 @@
       border-radius: 13px;
       border: 1.5px solid #17c0eb;
       padding: 26px 18px 20px 18px;
-      margin-bottom: 18px;
       min-height: 180px;
       color: #eee;
       box-shadow: 0 1px 7px #1112;
@@ -250,7 +280,7 @@
       <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events Logo">
       <h1>Multi-Sport Events<br>In Brighton</h1>
       <p class="mb-4">Perfect for Birthdays, Stag Dos, and Team Challenges.</p>
-      <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <div class="hero-btn-group">
         <a href="{% url 'enter_event_code' %}" class="btn btn-primary">Join</a>
         <a href="{% url 'get_quote' %}" class="btn btn-outline-dark">Create</a>
       </div>
