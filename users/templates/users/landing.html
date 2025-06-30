@@ -271,6 +271,57 @@
   }
 }
 </style>
+
+<style>
+  .howitworks-emoji {
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+  line-height: 1;
+  user-select: none;
+  /* Optional: add a faint background for emphasis */
+  background: #181818;
+  border-radius: 50%;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 2px 10px #0003;
+}
+@media (max-width: 600px) {
+  .howitworks-emoji { font-size: 2rem; width: 36px; height: 36px; }
+}
+.howitworks-box {
+  max-width: 370px;
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (max-width: 600px) {
+  .howitworks-box {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    max-width: 97vw;
+  }
+}
+
+.howitworks-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #16e06188 0%, #17c0eb88 100%);
+  border-radius: 3px;
+  margin: 22px auto 16px auto;
+  opacity: 0.6;
+}
+
+@media (min-width: 768px) {
+  .howitworks-divider {
+    display: none;
+  }
+}
+
+</style>
 </head>
 <body>
 
@@ -279,7 +330,7 @@
     <div class="container">
       <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events Logo">
       <h1>Multi-Sport Events<br>In Brighton</h1>
-      <p class="mb-4">Perfect for Birthdays, Stag Dos, and Team Challenges.</p>
+      <p class="mb-4">Perfect for Birthdays, Stag Do's and Team Challenges.</p>
       <div class="hero-btn-group">
         <a href="{% url 'enter_event_code' %}" class="btn btn-primary">Join</a>
         <a href="{% url 'get_quote' %}" class="btn btn-outline-dark">Create</a>
@@ -292,37 +343,47 @@
   <div class="container">
     <h2 class="section-header">How It Works</h2>
     <div class="row g-4 justify-content-center">
-      <div class="col-12 col-md-4">
-        <div class="info-card h-100 shadow-sm">
-          <h5>6–16 Players</h5>
-          <p>Perfect for group sizes small or large. Everyone’s involved, nobody’s left out.</p>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div class="info-card h-100 shadow-sm">
-          <h5>Pick 3–6 Events</h5>
-          <p>Pool, darts, table tennis, mini golf, bowling & more. You choose it, we run it.</p>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div class="info-card h-100 shadow-sm">
-          <h5>Leaderboard + Prizes</h5>
-          <p>Live scoring, built-in app, and a trophy for the winner. Plus bragging rights forever.</p>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="info-card h-100 shadow-sm">
-          <h5>All Organised For You</h5>
-          <p>We handle the timings, venues, scoring and logistics so you don’t have to.</p>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="info-card h-100 shadow-sm">
-          <h5>Bespoke App Access</h5>
-          <p>Your group gets a code to join the event and follow the action live on mobile.</p>
-        </div>
-      </div>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="howitworks-box">
+      <div class="howitworks-emoji mb-2">👥</div>
+      <h5>6–16 Players</h5>
+      <p>Perfect for group sizes small or large. Everyone’s involved, nobody’s left out.</p>
     </div>
+    <div class="howitworks-divider d-md-none"></div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="howitworks-box">
+      <div class="howitworks-emoji mb-2">🏓</div>
+      <h5>Pick 3–6 Events</h5>
+      <p>Pool, darts, table tennis, mini golf, bowling &amp; more. You choose it, we run it.</p>
+    </div>
+    <div class="howitworks-divider d-md-none"></div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="howitworks-box">
+      <div class="howitworks-emoji mb-2">🏆</div>
+      <h5>Leaderboard + Prizes</h5>
+      <p>Live scoring, built-in app, and a trophy for the winner. Plus bragging rights forever.</p>
+    </div>
+    <div class="howitworks-divider d-md-none"></div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="howitworks-box">
+      <div class="howitworks-emoji mb-2">📅</div>
+      <h5>All Organised For You</h5>
+      <p>We handle the timings, venues, scoring and logistics so you don’t have to.</p>
+    </div>
+    <div class="howitworks-divider d-md-none"></div>
+  </div>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="howitworks-box">
+      <div class="howitworks-emoji mb-2">📱</div>
+      <h5>Bespoke App Access</h5>
+      <p>Your group gets a code to join the event and follow the action live on mobile.</p>
+    </div>
+  </div>
+</div>
+
   </div>
 </section>
 

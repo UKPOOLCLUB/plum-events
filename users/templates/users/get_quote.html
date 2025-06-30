@@ -19,7 +19,7 @@ body {
 .quote-logo-bar {
   text-align: center;
   margin-top: 20px;
-  margin-bottom: 0;
+  margin-bottom: 20;
 }
 .quote-header {
   font-size: 1.6rem;
@@ -170,7 +170,9 @@ body {
     </a>
   </div>
 
-  <div class="quote-header">Get a Quick Quote</div>
+  {% if not total %}
+    <div class="quote-header">Get a Quick Quote</div>
+  {% endif %}
 
   {# ----- SHOW QUOTE RESULTS FIRST if total exists ----- #}
   {% if total %}
