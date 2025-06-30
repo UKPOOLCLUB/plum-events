@@ -10,9 +10,14 @@ from events.utils import create_balanced_groups
 from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
 from events.models import Killer, KillerPlayer, KillerConfig
 from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
+from .forms import BookingContactForm
+from .models import Booking
 from django.db.models import Sum, Count
 from datetime import date, timedelta, time, datetime
 from random import shuffle
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 def landing_page(request):
@@ -184,11 +189,35 @@ def booking_summary(request):
     selected_events = request.session.get('selected_events')
     quote_total = request.session.get('quote_total')
     event_date = request.session.get('event_date')
+    if isinstance(event_date, str):
+        event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
     start_time = request.session.get('start_time')
 
-    # Redirect if any info is missing
     if not all([group_size, selected_events, quote_total, event_date, start_time]):
         return redirect('calendar_page')
+
+    # Handle contact form
+    if request.method == 'POST':
+        form = BookingContactForm(request.POST)
+        if form.is_valid():
+            # Save booking
+            booking = Booking.objects.create(
+                name=form.cleaned_data['name'],
+                email=form.cleaned_data['email'],
+                phone=form.cleaned_data['phone'],
+                event_date=event_date,
+                start_time=start_time,
+                group_size=group_size,
+                selected_events=selected_events,
+                quote_total=quote_total,
+            )
+            # Send confirmation email
+            send_booking_confirmation_email(booking)
+            # Store booking id in session for use in payment step if needed
+            request.session['booking_id'] = booking.id
+            return redirect('payment_page')  # or wherever your payment starts
+    else:
+        form = BookingContactForm()
 
     context = {
         'booking': {
@@ -198,9 +227,64 @@ def booking_summary(request):
             'event_date': event_date,
             'start_time': start_time,
         },
-        'personal': True,  # or however you want to set this
+        'form': form,
+        'personal': True,
     }
     return render(request, 'users/booking_summary.html', context)
+
+def pay_now(request):
+    # Only allow POST for now (optional: GET could show an error or redirect)
+    if request.method != "POST":
+        messages.error(request, "Invalid access to payment page.")
+        return redirect('booking_summary')
+
+    # Fetch booking details from session
+    group_size = request.session.get('group_size')
+    selected_events = request.session.get('selected_events')
+    quote_total = request.session.get('quote_total')
+    event_date = request.session.get('event_date')
+    if isinstance(event_date, str):
+        event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+    start_time = request.session.get('start_time')
+
+    if not all([group_size, selected_events, quote_total, event_date, start_time]):
+        messages.error(request, "Missing booking details.")
+        return redirect('booking_summary')
+
+    # Here you would process the payment (call Stripe/PayPal etc)
+    # For now, we’ll just simulate success
+    # Optionally, you could create a Booking model instance here and save details to DB
+
+    # Clear session booking data if desired
+    # request.session.pop('group_size', None)
+    # request.session.pop('selected_events', None)
+    # request.session.pop('quote_total', None)
+    # request.session.pop('event_date', None)
+    # request.session.pop('start_time', None)
+
+    # Render a confirmation page
+    return render(request, 'users/payment_success.html', {
+        'group_size': group_size,
+        'selected_events': selected_events,
+        'quote_total': quote_total,
+        'event_date': event_date,
+        'start_time': start_time,
+    })
+
+def send_booking_confirmation_email(booking):
+    subject = "Your Plum Events Booking Confirmation"
+    message = (
+        f"Hi {booking.name},\n\n"
+        f"Thank you for booking with Plum Events!\n"
+        f"Your event is confirmed for {booking.event_date} at {booking.start_time}.\n"
+        f"Group size: {booking.group_size}\n"
+        f"Events: {', '.join(booking.selected_events)}\n"
+        f"Total Paid: £{booking.quote_total}\n\n"
+        f"We look forward to seeing you!\n\n"
+        f"Plum Events Team"
+    )
+    recipients = [booking.email, "bookings@plumevents.com"]
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
 
 
 def enter_event_code(request):

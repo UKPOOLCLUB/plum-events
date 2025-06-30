@@ -2,96 +2,235 @@
 {% load static %}
 
 {% block content %}
-
-<div class="container py-3">
-  <div class="d-flex justify-content-start mb-3 mt-3">
-    <a href="{% url 'landing_page' %}">
-      <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 60px;">
-    </a>
-  </div>
-
-  <!-- QUOTE SECTION: Front and center -->
-  <div class="row justify-content-center mb-4">
-    <div class="col-md-8 col-lg-6">
-      <div class="bg-dark border rounded p-4 shadow">
-        <h1 class="text-white fw-bold mb-4 text-center">Get a Quick Quote</h1>
-        <form method="post">
-          {% csrf_token %}
-          <div class="mb-3 d-flex align-items-center">
-            <label for="group_size" class="form-label text-white me-3 mb-0">Number of Players</label>
-            <input type="number" class="form-control" style="width: 80px;" id="group_size" name="group_size"
-              value="{{ group_size|default:'8' }}" required min="6" max="16">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label text-white">Select Your Events</label>
-            {% for name, price in event_pricing.items %}
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="events" value="{{ name }}" id="{{ name }}"
-                  {% if name in selected_events %}checked{% endif %}>
-                <label class="form-check-label text-white" for="{{ name }}">{{ name }}</label>
-              </div>
-            {% endfor %}
-          </div>
-
-          <p class="text-muted small mt-2">
-            Each event takes roughly <strong>1.5 hours</strong>. If venues are more than a 10-minute walk apart, travel time is included.
-          </p>
-
-          <div class="text-center">
-            <button type="submit" class="btn btn-primary px-4">Get My Quote</button>
-          </div>
-        </form>
-
-        {% if total %}
-          <div class="mt-4 alert alert-success text-center border border-success bg-dark text-white">
-            <h4 class="fw-bold text-success">Estimated Total: £{{ total }}</h4>
-            <p>Based on {{ group_size }} players and your chosen events.</p>
-            <form method="post" action="{% url 'get_quote' %}">
-              {% csrf_token %}
-              <input type="hidden" name="group_size" value="{{ group_size }}">
-              {% for event in selected_events %}
-                <input type="hidden" name="events" value="{{ event }}">
-              {% endfor %}
-              <input type="hidden" name="total" value="{{ total }}">
-              <input type="hidden" name="confirm_quote" value="1">
-              <button type="submit" class="btn btn-success mt-3">Continue to calendar</button>
-            </form>
-          </div>
-          <p class="mt-4 text-white small text-center fst-italic">
-            Each event will take roughly 1.5 hours. Travel between venues is included if more than a 10-minute walk.
-          </p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- You can add the marketing/features section **below** this -->
-
-</div>
-
 <style>
 body {
-  background-color: #111;
-  color: white;
+  background: #181818;
+  color: #f0f0f0;
+}
+.quote-outer {
+  max-width: 430px;
+  margin: 40px auto 0 auto;
+  border-radius: 18px;
+  border: 2px solid #17c0eb;
+  box-shadow: 0 2px 22px 0 #18233833;
+  background: #16181b;
+  padding-bottom: 20px;
+}
+.quote-logo-bar {
+  text-align: center;
+  margin-top: 28px;
+  margin-bottom: 0;
+}
+.quote-header {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #16e061;
+  text-align: center;
+  padding-top: 16px;
+  padding-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+.quote-success {
+  background: #191f14;
+  border: 1.5px solid #1df676;
+  border-radius: 11px;
+  color: #16e061 !important;
+  box-shadow: 0 0 7px #1df67644;
+  margin-bottom: 24px;
+  padding: 20px 15px 10px 15px;
+}
+.quote-success h4 {
+  color: #1df676;
+  font-size: 1.4rem;
+  margin-bottom: 6px;
+}
+.quote-success p {
+  color: #fff;
+  font-size: 1.07rem;
+  margin-bottom: 2px;
+}
+.form-label {
+  color: #1df676 !important;
+  font-size: 1.08rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.form-control, .form-check-input {
+  background: #23262b !important;
+  color: #fff !important;
+  border: 1.4px solid #17c0eb !important;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  font-size: 1.06rem;
+}
+.form-check-input:checked {
+  background-color: #16e061 !important;
+  border-color: #1df676 !important;
 }
 .form-check-label {
+  color: #f0f0f0 !important;
+  font-weight: 500;
+  margin-bottom: 0px;
+}
+.btn-primary {
+  background: #0099ff !important;
+  border: none;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 1.1rem;
+  letter-spacing: 0.2px;
+}
+.btn-success {
+  background: #16e061 !important;
+  color: #181818 !important;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  margin-top: 10px;
+  font-size: 1.07rem;
+  letter-spacing: 0.1px;
+  transition: filter 0.11s;
+}
+.btn-success:hover {
+  filter: brightness(0.92);
+}
+.quote-info {
+  color: #ddd;
+  font-size: 0.99rem;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+/* Plum Neon Checkboxes */
+.form-check {
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  padding-left: 24; /* removes Bootstrap's default offset */
+}
+
+.form-check-input {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #181c20;
+  border: 2.2px solid #17c0eb;
+  margin-right: 14px;
+  margin-left: 0;
+  transition: box-shadow 0.17s, border-color 0.18s;
+  box-shadow: 0 0 5px #17c0eb50;
+  appearance: none;
+  outline: none;
   cursor: pointer;
+  position: static; /* was absolute, now static */
+  top: unset; left: unset;
+}
+
+.form-check-label {
+  color: #f0f0f0 !important;
+  font-size: 1.16rem;
+  font-weight: 500;
+  margin: 0;
+  cursor: pointer;
+  /* Ensures label doesn't wrap under the checkbox on small screens */
+  flex: 1;
+}
+
+.form-check-input:checked {
+  background: #16e061 !important;
+  border-color: #1df676 !important;
+  box-shadow: 0 0 8px #1df67699, 0 0 2px #1df67666 inset;
+}
+
+.form-check-input:checked:after {
+  content: '✓';
+  color: #181818;
+  font-weight: 900;
+  font-size: 1.26rem;
+  position: absolute;
+  left: 5px;
+  top: 0px;
+  z-index: 1;
+}
+
+@media (max-width: 600px) {
+  .quote-outer { max-width: 99vw; border-radius: 0; }
 }
 </style>
 
+<div class="quote-outer">
+  <div class="quote-logo-bar">
+    <a href="{% url 'landing_page' %}">
+      <img src="{% static 'users/plum_logo.png' %}" alt="Plum Events" style="height: 65px;">
+    </a>
+  </div>
+
+  <div class="quote-header">Get a Quick Quote</div>
+
+  {# ----- SHOW QUOTE RESULTS FIRST if total exists ----- #}
+  {% if total %}
+    <div class="quote-success text-center">
+      <h4 class="fw-bold">Estimated Total: £{{ total }}</h4>
+      <p>Based on {{ group_size }} players and your chosen events.</p>
+      <form method="post" action="{% url 'get_quote' %}">
+        {% csrf_token %}
+        <input type="hidden" name="group_size" value="{{ group_size }}">
+        {% for event in selected_events %}
+          <input type="hidden" name="events" value="{{ event }}">
+        {% endfor %}
+        <input type="hidden" name="total" value="{{ total }}">
+        <input type="hidden" name="confirm_quote" value="1">
+        <button type="submit" class="btn btn-success mt-3">View Dates</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {# ----- ALWAYS SHOW THE FORM ----- #}
+  <form method="post" autocomplete="off" style="margin: 0 18px;">
+    {% csrf_token %}
+    <div class="mb-3 d-flex align-items-center">
+      <label for="group_size" class="form-label me-3 mb-0">Number of Players</label>
+      <input type="number" class="form-control" style="width: 80px;" id="group_size" name="group_size"
+        value="{{ group_size|default:'8' }}" required min="6" max="16">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Select Your Events</label>
+      {% for name, price in event_pricing.items %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="events" value="{{ name }}" id="{{ name }}"
+            {% if name in selected_events %}checked{% endif %}>
+          <label class="form-check-label" for="{{ name }}">{{ name }}</label>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p class="quote-info">
+      Each event takes roughly <strong>1.5 hours</strong>. If venues are more than a 10-minute walk apart, transport is provided.
+    </p>
+
+    <button type="submit" class="btn btn-primary">Get My Quote</button>
+  </form>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const form = document.querySelector('form');
+    const form = document.querySelector('.quote-outer form:not(.quote-success form)');
     const checkboxes = document.querySelectorAll('input[name="events"]');
-    form.addEventListener('submit', function (e) {
-      const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-      if (selectedCount < 3 || selectedCount > 6) {
-        e.preventDefault();
-        alert('Please select between 3 and 6 events.');
-      }
-    });
+    if(form){
+      form.addEventListener('submit', function (e) {
+        const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        if (selectedCount < 3 || selectedCount > 6) {
+          e.preventDefault();
+          alert('Please select between 3 and 6 events.');
+        }
+      });
+    }
   });
 </script>
-
 {% endblock %}

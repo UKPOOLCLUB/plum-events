@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+  <div class="card p-4 text-center">
+    <h2 class="text-success mb-3">Payment Successful!</h2>
+    <p class="text-white">Thank you for your booking.</p>
+    <div class="text-white my-4">
+      <div class="mb-2"><strong>Date:</strong> {{ event_date|date:"l – j F Y" }}</div>
+      <div class="mb-2"><strong>Time:</strong> {{ start_time }}</div>
+      <div class="mb-2"><strong>Group size:</strong> {{ group_size }}</div>
+      <div class="mb-2"><strong>Events:</strong>
+        {% for event in selected_events %}
+          {{ event|capfirst }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </div>
+      <div class="mb-2"><strong>Total Paid:</strong> £{{ quote_total }}</div>
+      <div class="text-success mb-2"><strong>You will receive email confirmation</strong></div>
+    </div>
+    <a href="{% url 'landing_page' %}" class="btn btn-primary mt-3">Back to Home</a>
+  </div>
+</div>
+{% endblock %}

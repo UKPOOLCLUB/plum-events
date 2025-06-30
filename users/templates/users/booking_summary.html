@@ -1,30 +1,157 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-5">
-  <div class="card p-4">
-    <h2 class="text-success">Booking Summary</h2>
-    <ul class="list-group mb-3">
-      <li class="list-group-item"><strong>Date:</strong> {{ booking.event_date }}</li>
-      <li class="list-group-item"><strong>Time:</strong> {{ booking.start_time }}</li>
-      <li class="list-group-item"><strong>Group size:</strong> {{ booking.group_size }}</li>
-      <li class="list-group-item"><strong>Events:</strong>
-        <ul>
-          {% for event in booking.selected_events %}
-            <li>{{ event|capfirst }}</li>
-          {% endfor %}
-        </ul>
-      </li>
-      <li class="list-group-item"><strong>Total:</strong> £{{ booking.quote_total }}</li>
-    </ul>
-    <form method="post" action="{% url 'pay_now' booking.id %}">
-      {% csrf_token %}
-      <button class="btn btn-success btn-lg w-100" type="submit">Pay Now</button>
-    </form>
-    <p class="mt-3 text-danger">
-      {% if personal %}
-        <strong>Note:</strong> This payment will go to a personal bank account for now (testing phase).
-      {% endif %}
-    </p>
-  </div>
+<style>
+    body { background: #181818; }
+    .booking-outer {
+        max-width: 420px;
+        margin: 40px auto;
+        padding: 0;
+        border-radius: 18px;
+        border: 2px solid #17c0eb;
+        box-shadow: 0 2px 22px 0 #18233833;
+        background: #16181b;
+    }
+    .booking-header {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #16e061;
+        text-align: center;
+        padding-top: 28px;
+        padding-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+.summary-table {
+    width: 90%;
+    background: #1d1e22;
+    border-radius: 12px;
+    margin: 0 auto 22px auto;
+    box-shadow: 0 1px 6px #1112;
+    font-size: 1.06rem;
+    color: #eee;
+}
+
+    .summary-table tr {
+        height: 35px;
+    }
+    .summary-label {
+        font-weight: 600;
+        color: #1df676;
+        min-width: 100px;
+        text-align: left;
+        padding-top: 8px;
+        padding-right: 14px;
+        padding-left: 14px;
+        vertical-align: top;
+    }
+    .summary-value {
+        text-align: left;
+        color: #f6f6f6;
+    }
+    .summary-events {
+        margin: 0; padding: 0; list-style: none;
+    }
+    .summary-events li {
+        margin: 0;
+        padding: 0;
+        font-size: 1rem;
+    }
+
+    .booking-form-title {
+        color: #1df676;
+        text-align: center;
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        margin-top: 14px;
+        letter-spacing: 0.2px;
+    }
+    form label {
+        color: #1df676;
+        font-weight: 500;
+        font-size: 1.01rem;
+        margin-bottom: 4px;
+    }
+    form input {
+        background: #23262b;
+        color: #fff;
+        border: 1.4px solid #17c0eb;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 9px 12px;
+        width: 100%;
+        font-size: 1.06rem;
+    }
+    .btn-primary {
+        background: #0099ff !important;
+        border: none;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 12px;
+        width: 100%;
+        margin-top: 6px;
+        font-size: 1.1rem;
+        letter-spacing: 0.2px;
+    }
+    .btn-back {
+    color: #1df676 !important;
+    border: 1.5px solid #17c0eb !important;
+    background: transparent !important;
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 1.06rem;
+    margin-top: 7px;
+    width: 100%;
+    transition: background 0.13s, color 0.13s;
+}
+.btn-back:hover {
+    background: #17c0eb22 !important;
+    color: #0099ff !important;
+    text-decoration: none;
+}
+    @media (max-width: 600px) {
+        .booking-outer { max-width: 99vw; border-radius: 0; }
+        .summary-table { font-size: 1rem; padding: 10px 5px; }
+    }
+</style>
+
+<div class="booking-outer">
+    <div class="booking-header">Booking Summary</div>
+    <table class="summary-table">
+        <tr>
+            <td class="summary-label">Date:</td>
+            <td class="summary-value">{{ booking.event_date }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Time:</td>
+            <td class="summary-value">{{ booking.start_time }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Group size:</td>
+            <td class="summary-value">{{ booking.group_size }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Events:</td>
+            <td class="summary-value">
+                <ul class="summary-events">
+                {% for event in booking.selected_events %}
+                    <li>{{ event|capfirst }}</li>
+                {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-label">Total:</td>
+            <td class="summary-value">£{{ booking.quote_total }}</td>
+        </tr>
+    </table>
+
+    <div class="booking-form-title">Enter Your Details</div>
+<form method="post" autocomplete="off" style="padding: 0 18px 18px 18px;">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary w-100 mb-2">Confirm & Continue to Payment</button>
+    <a href="{% url 'get_quote' %}" class="btn btn-warning w-100">&#8592; Back</a>
+</form>
+
 </div>
 {% endblock %}
