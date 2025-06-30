@@ -10,8 +10,8 @@ from events.utils import create_balanced_groups
 from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
 from events.models import Killer, KillerPlayer, KillerConfig
 from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
-from .forms import BookingContactForm
-from .models import Booking
+from .forms import BookingContactForm, ContactForm
+from .models import Booking, ContactEnquiry
 from django.db.models import Sum, Count
 from datetime import date, timedelta, time, datetime
 from random import shuffle
@@ -87,6 +87,16 @@ def get_quote(request):
     }
     return render(request, 'users/get_quote.html', context)
 
+def get_expected_duration(num_events):
+    if num_events == 3:
+        return "4 – 5 hours"
+    elif num_events == 4:
+        return "5 – 6 hours"
+    elif num_events == 5:
+        return "7–8 hours"
+    elif num_events == 6:
+        return "8–9 hours"
+    return "N/A"
 
 def view_calendar(request):
     return render(request, 'users/calendar.html')
@@ -95,6 +105,8 @@ def calendar_page(request):
     group_size = request.session.get('group_size')
     selected_events = request.session.get('selected_events')
     quote_total = request.session.get('quote_total')
+    num_events = len(selected_events)
+    expected_duration = get_expected_duration(num_events)
 
     if not group_size or not selected_events:
         return redirect('get_quote')
@@ -119,6 +131,7 @@ def calendar_page(request):
             'group_size': group_size,
             'selected_events': selected_events,
             'quote_total': quote_total,
+            "expected_duration": expected_duration,
         }
         return render(request, 'users/calendar.html', context)
 
@@ -126,6 +139,7 @@ def calendar_page(request):
         'group_size': group_size,
         'selected_events': selected_events,
         'quote_total': quote_total,
+        "expected_duration": expected_duration,
     }
     return render(request, 'users/calendar.html', context)
 
@@ -184,9 +198,12 @@ def confirm_booking(request):
     # If GET or missing data, redirect to calendar
     return redirect('calendar_page')
 
+
 def booking_summary(request):
     group_size = request.session.get('group_size')
     selected_events = request.session.get('selected_events')
+    num_events = len(selected_events)
+    expected_duration = get_expected_duration(num_events)
     quote_total = request.session.get('quote_total')
     event_date = request.session.get('event_date')
     if isinstance(event_date, str):
@@ -226,6 +243,7 @@ def booking_summary(request):
             'quote_total': quote_total,
             'event_date': event_date,
             'start_time': start_time,
+            "expected_duration": expected_duration,
         },
         'form': form,
         'personal': True,
@@ -286,6 +304,25 @@ def send_booking_confirmation_email(booking):
     recipients = [booking.email, "bookings@plumevents.com"]
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
 
+def contact_us(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # Save to DB (optional)
+            ContactEnquiry.objects.create(**form.cleaned_data)
+            # Email notification (optional)
+            # from django.core.mail import send_mail
+            # send_mail(
+            #     subject=f"New Enquiry from {form.cleaned_data['name']}",
+            #     message=form.cleaned_data['message'],
+            #     from_email=form.cleaned_data['email'],
+            #     recipient_list=['youremail@example.com'],
+            # )
+            messages.success(request, "Thank you for your enquiry! We'll be in touch soon.")
+            return redirect('contact_us')
+    else:
+        form = ContactForm()
+    return render(request, 'users/contact_us.html', {'form': form})
 
 def enter_event_code(request):
     error = None

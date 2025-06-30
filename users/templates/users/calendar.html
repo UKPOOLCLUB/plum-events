@@ -41,17 +41,18 @@
         color: #1df676;
         font-weight: 600;
     }
-    .event-badge {
-        background: #16e061 !important;
-        color: #181818 !important;
-        font-weight: 600;
-        font-size: 1rem;
-        margin-right: 7px;
-        margin-bottom: 5px;
-        border-radius: 7px;
-        padding: 2.5px 12px;
-        display: inline-block;
-    }
+.event-badge {
+    background: none !important;
+    color: #fff !important;
+    font-weight: 400;
+    font-size: 1rem;
+    margin-right: 7px;
+    margin-bottom: 5px;
+    border-radius: 0;
+    padding: 0;
+    display: block;
+}
+
     .calendar-form-label {
         color: #1df676;
         font-size: 1.13rem;
@@ -123,6 +124,7 @@
           {% endif %}
         </div>
         <div style="margin-top:10px;"><strong>Quote total:</strong> £{{ quote_total }}</div>
+        <div style="margin-top:10px;"><strong>Duration:</strong> {{ expected_duration }}</div>
     </div>
 
     <div class="calendar-header" style="font-size: 1.45rem; margin-top: 10px;">Choose Your Date</div>
