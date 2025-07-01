@@ -75,7 +75,7 @@ def get_quote(request):
 
         # Else: Just show the quote, do not redirect yet
         event_total = sum(EVENT_PRICING[event] for event in selected_events if event in EVENT_PRICING)
-        total = event_total * group_size + 25  # admin fee
+        total = event_total * group_size + 50  # admin fee
         show_continue = True
 
     context = {
@@ -305,25 +305,39 @@ def send_booking_confirmation_email(booking):
     recipients = [booking.email, "bookings@plumevents.com"]
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
 
+
 def contact_us(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = ContactForm(request.POST)
         if form.is_valid():
-            # Save to DB (optional)
-            ContactEnquiry.objects.create(**form.cleaned_data)
-            # Email notification (optional)
-            # from django.core.mail import send_mail
-            # send_mail(
-            #     subject=f"New Enquiry from {form.cleaned_data['name']}",
-            #     message=form.cleaned_data['message'],
-            #     from_email=form.cleaned_data['email'],
-            #     recipient_list=['youremail@example.com'],
-            # )
-            messages.success(request, "Thank you for your enquiry! We'll be in touch soon.")
-            return redirect('contact_us')
+            # Get the fields from your form
+            name = form.cleaned_data['name']
+            email = form.cleaned_data['email']
+            message = form.cleaned_data['message']
+
+            subject = f"Contact form submission from {name}"
+            body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+
+            send_mail(
+                subject,
+                body,
+                'contact@plumevents.co.uk',    # FROM address (shows as the sender)
+                ['contact@plumevents.co.uk'],  # TO address (your mailbox)
+                fail_silently=False,
+            )
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+            else:
+                return redirect('landing_page')
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = ContactForm()
-    return render(request, 'users/contact_us.html', {'form': form})
+    return render(request, "users/landing.html", {"form": form})
+
+
 
 def enter_event_code(request):
     error = None

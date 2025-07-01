@@ -322,6 +322,31 @@
 }
 
 </style>
+
+<style>
+  /* FAQ accordion tweaks for dark theme */
+.accordion-item.bg-dark {
+  background: #181818 !important;
+  border: 1.5px solid #17c0eb;
+  border-radius: 11px !important;
+  margin-bottom: 11px;
+  box-shadow: 0 1px 8px #0004;
+}
+.accordion-button.bg-dark {
+  background: #181818 !important;
+  color: #1df676 !important;
+  font-weight: 700;
+}
+.accordion-button:not(.collapsed) {
+  color: #16e061 !important;
+  background: #1d1e22 !important;
+}
+.accordion-body {
+  color: #f0f0f0;
+  font-size: 1.06rem;
+}
+
+</style>
 </head>
 <body>
 
@@ -346,7 +371,7 @@
   <div class="col-12 col-sm-6 col-lg-4">
     <div class="howitworks-box">
       <div class="howitworks-emoji mb-2">👥</div>
-      <h5>6–16 Players</h5>
+      <h5>4–16 Players</h5>
       <p>Perfect for group sizes small or large. Everyone’s involved, nobody’s left out.</p>
     </div>
     <div class="howitworks-divider d-md-none"></div>
@@ -384,6 +409,76 @@
   </div>
 </div>
 
+  </div>
+</section>
+
+  <!-- FAQ Section -->
+<section class="py-5 section-dark" id="faq">
+  <div class="container">
+    <h2 class="section-header text-center mb-4">Frequently Asked Questions</h2>
+    <div class="accordion accordion-flush" id="faqAccordion">
+      <div class="accordion-item bg-dark text-white">
+        <h2 class="accordion-header" id="faqOne">
+          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-one" aria-expanded="false" aria-controls="faq-collapse-one">
+            Can we book for more than 16 people?
+          </button>
+        </h2>
+        <div id="faq-collapse-one" class="accordion-collapse collapse" aria-labelledby="faqOne" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Our events are perfect for groups of 4–16 people. For larger groups, get in touch for custom options!
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item bg-dark text-white">
+        <h2 class="accordion-header" id="faqTwo">
+          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-two" aria-expanded="false" aria-controls="faq-collapse-two">
+            What sports or games can we choose from?
+          </button>
+        </h2>
+        <div id="faq-collapse-two" class="accordion-collapse collapse" aria-labelledby="faqTwo" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            You can pick from pool, darts, table tennis, mini golf, bowling, snooker, Amercian pool, and more! Mix and match to create your perfect event.
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item bg-dark text-white">
+        <h2 class="accordion-header" id="faqThree">
+          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-three" aria-expanded="false" aria-controls="faq-collapse-three">
+            Do you handle all the organising?
+          </button>
+        </h2>
+        <div id="faq-collapse-three" class="accordion-collapse collapse" aria-labelledby="faqThree" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Yes! We handle timings, venues, scoring, and logistics. We will also be present to host the event and explain the rules clearly. Just turn up and enjoy.
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item bg-dark text-white">
+        <h2 class="accordion-header" id="faqFour">
+          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-four" aria-expanded="false" aria-controls="faq-collapse-four">
+            Can we use the app on our phones?
+          </button>
+        </h2>
+        <div id="faq-collapse-four" class="accordion-collapse collapse" aria-labelledby="faqFour" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Absolutely! All players get a code to join and follow live scoring and leaderboard updates right from their mobiles. Each event is customised to your group and preferences.
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item bg-dark text-white">
+        <h2 class="accordion-header" id="faqFive">
+          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-five" aria-expanded="false" aria-controls="faq-collapse-five">
+            What if we want prizes or a trophy?
+          </button>
+        </h2>
+        <div id="faq-collapse-five" class="accordion-collapse collapse" aria-labelledby="faqFive" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            We include a trophy for the overall winner, plus optional extra prizes—just ask when booking!
+          </div>
+        </div>
+      </div>
+      <!-- Add more FAQs as needed! -->
+    </div>
   </div>
 </section>
 
@@ -440,7 +535,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form method="post" action="{% url 'contact_us' %}">
+        <form id="contactForm" method="post" action="{% url 'contact_us' %}">
           {% csrf_token %}
           {{ form.as_p }}
           <button type="submit" class="btn btn-success mt-2">Send</button>
@@ -450,6 +545,18 @@
   </div>
 </div>
 
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11000">
+  <div id="thankyouToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        Thank you for your enquiry, we will be in touch soon.
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
+
 <footer class="text-white py-4 mt-4">
   <div class="container text-center">
     <small>&copy; 2025 Plum Events Ltd. All rights reserved.</small>
@@ -457,5 +564,50 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById('contactForm');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          // Hide the modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+          modal.hide();
+
+          // Show thank you toast
+          const toastEl = document.getElementById('thankyouToast');
+          const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+          toast.show();
+
+          form.reset();
+        } else {
+          // Display error message (optional: improve as you wish)
+          alert("There was an error. Please try again.");
+        }
+      })
+      .catch((error) => {
+        alert("An error occurred. Please try again.");
+      });
+    });
+  }
+});
+</script>
+
 </body>
 </html>
