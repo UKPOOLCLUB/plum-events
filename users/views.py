@@ -5,6 +5,7 @@ from .models import Participant, EventAvailability, Booking
 from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from collections import defaultdict
+from django.views.decorators.http import require_POST
 from pprint import pprint
 from events.utils import create_balanced_groups
 from events.models import MiniGolfConfig, MiniGolfGroup, MiniGolfScorecard, EDartsConfig, EDartsGroup, TableTennisPlayer, TableTennisConfig
@@ -18,6 +19,8 @@ from random import shuffle
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
+import stripe
+from django.views.decorators.csrf import csrf_exempt
 
 
 def landing_page(request):
@@ -200,6 +203,12 @@ def confirm_booking(request):
     return redirect('calendar_page')
 
 
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from .forms import BookingContactForm
+from .models import Booking
+from datetime import datetime
+
 def booking_summary(request):
     group_size = request.session.get('group_size')
     selected_events = request.session.get('selected_events')
@@ -214,42 +223,56 @@ def booking_summary(request):
     if not all([group_size, selected_events, quote_total, event_date, start_time]):
         return redirect('calendar_page')
 
-    # Handle contact form
+    # Find or create a booking object in session
+    booking_id = request.session.get('booking_id')
+    booking = Booking.objects.filter(id=booking_id).first() if booking_id else None
+
     if request.method == 'POST':
         form = BookingContactForm(request.POST)
         if form.is_valid():
-            # Save booking
-            booking = Booking.objects.create(
-                name=form.cleaned_data['name'],
-                email=form.cleaned_data['email'],
-                phone=form.cleaned_data['phone'],
-                event_date=event_date,
-                start_time=start_time,
-                group_size=group_size,
-                selected_events=selected_events,
-                quote_total=quote_total,
-            )
-            # Send confirmation email
-            send_booking_confirmation_email(booking)
-            # Store booking id in session for use in payment step if needed
-            request.session['booking_id'] = booking.id
-            return redirect('payment_page')  # or wherever your payment starts
+            if not booking:
+                booking = Booking.objects.create(
+                    name=form.cleaned_data['name'],
+                    email=form.cleaned_data['email'],
+                    phone=form.cleaned_data['phone'],
+                    event_date=event_date,
+                    start_time=start_time,
+                    group_size=group_size,
+                    selected_events=selected_events,
+                    quote_total=quote_total,
+                )
+                request.session['booking_id'] = booking.id
+            else:
+                booking.name = form.cleaned_data['name']
+                booking.email = form.cleaned_data['email']
+                booking.phone = form.cleaned_data['phone']
+                booking.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'error': 'Please fill in all fields.'})
+
     else:
-        form = BookingContactForm()
+        form = BookingContactForm(initial={
+            'name': booking.name if booking else "",
+            'email': booking.email if booking else "",
+            'phone': booking.phone if booking else "",
+        })
 
     context = {
         'booking': {
+            'id': booking.id if booking else None,
             'group_size': group_size,
             'selected_events': selected_events,
             'quote_total': quote_total,
             'event_date': event_date,
             'start_time': start_time,
-            "expected_duration": expected_duration,
+            'expected_duration': expected_duration,
         },
         'form': form,
-        'personal': True,
+        'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,
     }
     return render(request, 'users/booking_summary.html', context)
+
 
 def pay_now(request):
     # Only allow POST for now (optional: GET could show an error or redirect)
@@ -686,3 +709,80 @@ def leaderboard_state(request, event_id):
     return JsonResponse({
         "leaderboard_state": leaderboard_state
     })
+
+
+@require_POST
+@csrf_exempt  # Consider handling CSRF properly for production!
+def create_checkout_session(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    # Stripe expects amount in pence
+    amount = int(float(booking.quote_total) * 100)
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'gbp',
+                    'product_data': {
+                        'name': f'Plum Events Booking #{booking.id}',
+                    },
+                    'unit_amount': amount,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            customer_email=getattr(booking, 'email', None),
+            success_url=request.build_absolute_uri('/payment/success/?session_id={CHECKOUT_SESSION_ID}'),
+            cancel_url=request.build_absolute_uri('/payment/cancel/'),
+            metadata={
+                'booking_id': str(booking.id),
+            }
+        )
+        return JsonResponse({'id': session.id})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+def booking_confirm(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    if request.method == 'POST':
+        # Use instance=booking only if BookingContactForm is a ModelForm
+        form = BookingContactForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+            return redirect('booking_confirm', booking_id=booking.id)
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Invalid form data.'})
+    else:
+        form = BookingContactForm(instance=booking)
+    context = {
+        'booking': booking,
+        'form': form,
+        'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,  # <-- UPDATED
+    }
+    return render(request, 'YOUR_TEMPLATE_NAME.html', context)  # Use your actual template filename
+
+
+def payment_success(request):
+    session_id = request.GET.get('session_id')
+    booking = None
+    if session_id:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        session = stripe.checkout.Session.retrieve(session_id)
+        booking_id = session.metadata.get('booking_id')
+        if booking_id:
+            booking = Booking.objects.filter(id=booking_id).first()
+            if booking:
+                booking.paid = True
+                booking.save()
+    return render(request, 'payment_success.html', {'booking': booking})
+
+
+def payment_cancel(request):
+    return render(request, 'payment_cancel.html')

@@ -2,118 +2,21 @@
 {% block content %}
 <style>
     body { background: #181818; }
-    .booking-outer {
-        max-width: 420px;
-        margin: 40px auto;
-        padding: 0;
-        border-radius: 18px;
-        border: 2px solid #17c0eb;
-        box-shadow: 0 2px 22px 0 #18233833;
-        background: #16181b;
-    }
-    .booking-header {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #16e061;
-        text-align: center;
-        padding-top: 28px;
-        padding-bottom: 12px;
-        letter-spacing: 0.5px;
-    }
-.summary-table {
-    width: 90%;
-    background: #1d1e22;
-    border-radius: 12px;
-    margin: 0 auto 22px auto;
-    box-shadow: 0 1px 6px #1112;
-    font-size: 1.06rem;
-    color: #eee;
-}
-
-    .summary-table tr {
-        height: 35px;
-    }
-    .summary-label {
-        font-weight: 600;
-        color: #1df676;
-        min-width: 100px;
-        text-align: left;
-        padding-top: 8px;
-        padding-right: 14px;
-        padding-left: 14px;
-        vertical-align: top;
-    }
-    .summary-value {
-        text-align: left;
-        color: #f6f6f6;
-    }
-    .summary-events {
-        margin: 0; padding: 0; list-style: none;
-    }
-    .summary-events li {
-        margin: 0;
-        padding: 0;
-        font-size: 1rem;
-    }
-
-    .booking-form-title {
-        color: #1df676;
-        text-align: center;
-        font-size: 1.35rem;
-        font-weight: 600;
-        margin-bottom: 16px;
-        margin-top: 14px;
-        letter-spacing: 0.2px;
-    }
-    form label {
-        color: #1df676;
-        font-weight: 500;
-        font-size: 1.01rem;
-        margin-bottom: 4px;
-    }
-    form input {
-        background: #23262b;
-        color: #fff;
-        border: 1.4px solid #17c0eb;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        padding: 9px 12px;
-        width: 100%;
-        font-size: 1.06rem;
-    }
-    .btn-primary {
-        background: #0099ff !important;
-        border: none;
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 12px;
-        width: 100%;
-        margin-top: 6px;
-        font-size: 1.1rem;
-        letter-spacing: 0.2px;
-    }
-    .btn-warning {
-        background: grey !important;
-            color: #181818 !important;
-            font-weight: 700;
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            width: 100%;
-            margin-top: 13px;
-            font-size: 1.07rem;
-            letter-spacing: 0.1px;
-            transition: filter 0.11s;
-    }
-.btn-warning:hover {
-    background: #17c0eb22 !important;
-    color: #0099ff !important;
-    text-decoration: none;
-}
-    @media (max-width: 600px) {
-        .booking-outer { max-width: 99vw; border-radius: 0; }
-        .summary-table { font-size: 1rem; padding: 10px 5px; }
-    }
+    .booking-outer { max-width: 420px; margin: 40px auto; padding: 0; border-radius: 18px; border: 2px solid #17c0eb; box-shadow: 0 2px 22px 0 #18233833; background: #16181b; }
+    .booking-header { font-size: 2rem; font-weight: bold; color: #16e061; text-align: center; padding-top: 28px; padding-bottom: 12px; letter-spacing: 0.5px; }
+    .summary-table { width: 90%; background: #1d1e22; border-radius: 12px; margin: 0 auto 22px auto; box-shadow: 0 1px 6px #1112; font-size: 1.06rem; color: #eee; }
+    .summary-table tr { height: 35px; }
+    .summary-label { font-weight: 600; color: #1df676; min-width: 100px; text-align: left; padding-top: 8px; padding-right: 14px; padding-left: 14px; vertical-align: top; }
+    .summary-value { text-align: left; color: #f6f6f6; }
+    .summary-events { margin: 0; padding: 0; list-style: none; }
+    .summary-events li { margin: 0; padding: 0; font-size: 1rem; }
+    .booking-form-title { color: #1df676; text-align: center; font-size: 1.35rem; font-weight: 600; margin-bottom: 16px; margin-top: 14px; letter-spacing: 0.2px; }
+    form label { color: #1df676; font-weight: 500; font-size: 1.01rem; margin-bottom: 4px; }
+    form input { background: #23262b; color: #fff; border: 1.4px solid #17c0eb; border-radius: 8px; margin-bottom: 10px; padding: 9px 12px; width: 100%; font-size: 1.06rem; }
+    .btn-primary { background: #0099ff !important; border: none; font-weight: 600; border-radius: 8px; padding: 12px; width: 100%; margin-top: 6px; font-size: 1.1rem; letter-spacing: 0.2px; }
+    .btn-warning { background: grey !important; color: #181818 !important; font-weight: 700; border: none; border-radius: 8px; padding: 12px; width: 100%; margin-top: 13px; font-size: 1.07rem; letter-spacing: 0.1px; transition: filter 0.11s; }
+    .btn-warning:hover { background: #17c0eb22 !important; color: #0099ff !important; text-decoration: none; }
+    @media (max-width: 600px) { .booking-outer { max-width: 99vw; border-radius: 0; } .summary-table { font-size: 1rem; padding: 10px 5px; } }
 </style>
 
 <div class="booking-outer">
@@ -148,12 +51,67 @@
     </table>
 
     <div class="booking-form-title">Enter Your Details</div>
-<form method="post" autocomplete="off" style="padding: 0 18px 18px 18px;">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary w-100 mb-2">Confirm & Continue to Payment</button>
-    <a href="{% url 'get_quote' %}" class="btn btn-warning w-100">&#8592; Back</a>
-</form>
+    <form id="details-form" method="post" autocomplete="off" style="padding: 0 18px 18px 18px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary w-100 mb-2" id="continue-btn">Confirm & Continue to Payment</button>
+        <a href="{% url 'get_quote' %}" class="btn btn-warning w-100">&#8592; Back</a>
+    </form>
 
+    <div id="stripe-section" style="display: none; padding: 0 18px 18px 18px;">
+        <button id="checkout-button" class="btn btn-primary w-100 mb-2">Pay Now</button>
+    </div>
 </div>
+
+{% if booking.id %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const detailsForm = document.getElementById('details-form');
+const stripeSection = document.getElementById('stripe-section');
+const continueBtn = document.getElementById('continue-btn');
+const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
+
+detailsForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    continueBtn.disabled = true;
+    continueBtn.innerText = "Processing...";
+    fetch(detailsForm.action, {
+        method: "POST",
+        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+        body: new FormData(detailsForm)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            detailsForm.style.display = "none";
+            stripeSection.style.display = "block";
+        } else if (data.error) {
+            alert(data.error);
+            continueBtn.disabled = false;
+            continueBtn.innerText = "Confirm & Continue to Payment";
+        }
+    });
+});
+
+document.getElementById('checkout-button').addEventListener('click', function () {
+    fetch("{% url 'create_checkout_session' booking.id %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ booking_id: "{{ booking.id }}" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.id) {
+            var stripe = Stripe(STRIPE_PUBLIC_KEY);
+            stripe.redirectToCheckout({ sessionId: data.id });
+        } else {
+            alert("Unable to start payment session. Please try again.");
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
