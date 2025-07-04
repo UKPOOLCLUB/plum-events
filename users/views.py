@@ -247,9 +247,11 @@ def booking_summary(request):
                 booking.email = form.cleaned_data['email']
                 booking.phone = form.cleaned_data['phone']
                 booking.save()
-            return JsonResponse({'success': True})
+            # 🚩 This is the important line:
+            return JsonResponse({'success': True, 'booking_id': booking.id})
         else:
             return JsonResponse({'error': 'Please fill in all fields.'})
+
 
     else:
         form = BookingContactForm(initial={
@@ -712,13 +714,18 @@ def leaderboard_state(request, event_id):
 
 
 @require_POST
-@csrf_exempt  # Consider handling CSRF properly for production!
+@csrf_exempt
 def create_checkout_session(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    # Stripe expects amount in pence
     amount = int(float(booking.quote_total) * 100)
+
+    # 🚩 HARD CODE THE SUCCESS URL, NO ENCODING
+    success_url = "http://127.0.0.1:8000/payment/success/?session_id={CHECKOUT_SESSION_ID}"
+    # or "http://localhost:8000/payment/success/?session_id={CHECKOUT_SESSION_ID}"
+
+    print("DEBUG Stripe success_url:", success_url)
 
     try:
         session = stripe.checkout.Session.create(
@@ -735,12 +742,13 @@ def create_checkout_session(request, booking_id):
             }],
             mode='payment',
             customer_email=getattr(booking, 'email', None),
-            success_url=request.build_absolute_uri('/payment/success/?session_id={CHECKOUT_SESSION_ID}'),
-            cancel_url=request.build_absolute_uri('/payment/cancel/'),
+            success_url=success_url,
+            cancel_url="http://127.0.0.1:8000/payment/cancel/",
             metadata={
                 'booking_id': str(booking.id),
             }
         )
+
         return JsonResponse({'id': session.id})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -766,7 +774,7 @@ def booking_confirm(request, booking_id):
         'form': form,
         'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,  # <-- UPDATED
     }
-    return render(request, 'YOUR_TEMPLATE_NAME.html', context)  # Use your actual template filename
+    return render(request, 'users/booking_summary.html', context)  # Use your actual template filename
 
 
 def payment_success(request):
@@ -781,7 +789,7 @@ def payment_success(request):
             if booking:
                 booking.paid = True
                 booking.save()
-    return render(request, 'payment_success.html', {'booking': booking})
+    return render(request, 'users/payment_success.html', {'booking': booking})
 
 
 def payment_cancel(request):

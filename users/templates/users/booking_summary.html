@@ -66,11 +66,16 @@
 {% if booking.id %}
 <script src="https://js.stripe.com/v3/"></script>
 <script>
+console.log("Stripe booking page JS loaded!");
+
 const detailsForm = document.getElementById('details-form');
 const stripeSection = document.getElementById('stripe-section');
 const continueBtn = document.getElementById('continue-btn');
 const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
 
+let bookingId = "{{ booking.id|default:'' }}";
+
+// Handle form submission, show Stripe button
 detailsForm.addEventListener('submit', function(e) {
     e.preventDefault();
     continueBtn.disabled = true;
@@ -85,6 +90,7 @@ detailsForm.addEventListener('submit', function(e) {
         if (data.success) {
             detailsForm.style.display = "none";
             stripeSection.style.display = "block";
+            if (data.booking_id) bookingId = data.booking_id;
         } else if (data.error) {
             alert(data.error);
             continueBtn.disabled = false;
@@ -93,14 +99,20 @@ detailsForm.addEventListener('submit', function(e) {
     });
 });
 
+// Handle Stripe checkout
 document.getElementById('checkout-button').addEventListener('click', function () {
-    fetch("{% url 'create_checkout_session' booking.id %}", {
+    if (!bookingId) {
+        alert("Booking ID not found!");
+        return;
+    }
+    // The correct path for your create_checkout_session endpoint:
+    fetch(`/users/booking/${bookingId}/create-checkout-session/`, {
         method: "POST",
         headers: {
             "X-CSRFToken": "{{ csrf_token }}",
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ booking_id: "{{ booking.id }}" })
+        body: JSON.stringify({ booking_id: bookingId })
     })
     .then(res => res.json())
     .then(data => {
