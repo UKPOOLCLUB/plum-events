@@ -345,6 +345,87 @@
   color: #f0f0f0;
   font-size: 1.06rem;
 }
+.custom-faq-list {
+  margin-top: 0;
+}
+
+.faq-card {
+  background: #191c20;
+  border-radius: 14px;
+  padding: 0;
+  border: 1.7px solid #17c0eb;
+  margin-bottom: 8px;
+  transition: border-color 0.2s, box-shadow 0.22s;
+  box-shadow: 0 4px 26px #151c23b0;
+}
+
+.faq-card:hover,
+.faq-toggle[aria-expanded="true"] {
+  border-color: #16e061;
+  box-shadow: 0 6px 32px #12ef7848;
+}
+
+.faq-toggle {
+  background: none;
+  border: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 19px 18px;
+  font-size: 1.17rem;
+  font-weight: 700;
+  color: #1df676;
+  text-align: left;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.19s, color 0.19s;
+  outline: none;
+  position: relative;
+}
+
+.faq-toggle:hover {
+  background: #181f23;
+  color: #16e061;
+}
+
+.faq-emoji {
+  font-size: 1.8rem;
+  margin-right: 13px;
+  margin-top: 1px;
+  user-select: none;
+  filter: drop-shadow(0 2px 7px #0003);
+  transition: transform 0.15s;
+}
+
+.faq-arrow {
+  margin-left: auto;
+  color: #17c0eb;
+  font-size: 1.19rem;
+  transition: transform 0.21s;
+}
+
+.faq-toggle[aria-expanded="true"] .faq-arrow {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  padding: 18px 22px 14px 53px;
+  color: #fff;
+  font-size: 1.09rem;
+  border-top: 1.1px solid #222;
+  line-height: 1.7;
+  background: #16181c;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+@media (max-width: 600px) {
+  .faq-card { padding: 0; }
+  .faq-toggle { font-size: 1.03rem; padding: 13px 12px; }
+  .faq-emoji { font-size: 1.29rem; margin-right: 8px; }
+  .faq-answer { font-size: 0.98rem; padding: 14px 13px 9px 35px; }
+}
+
 
 </style>
 </head>
@@ -412,75 +493,95 @@
   </div>
 </section>
 
-  <!-- FAQ Section -->
 <section class="py-5 section-dark" id="faq">
   <div class="container">
     <h2 class="section-header text-center mb-4">Frequently Asked Questions</h2>
-    <div class="accordion accordion-flush" id="faqAccordion">
-      <div class="accordion-item bg-dark text-white">
-        <h2 class="accordion-header" id="faqOne">
-          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-one" aria-expanded="false" aria-controls="faq-collapse-one">
-            Can we book for more than 16 people?
+    <div class="custom-faq-list row justify-content-center g-4">
+
+      <!-- FAQ 1 -->
+      <div class="col-12 col-md-6">
+        <div class="faq-card shadow-lg">
+          <button class="faq-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="false">
+            <span class="faq-emoji">👨‍👩‍👧‍👦</span>
+            <span>Can we book for more than 16 people?</span>
+            <span class="faq-arrow">&#9662;</span>
           </button>
-        </h2>
-        <div id="faq-collapse-one" class="accordion-collapse collapse" aria-labelledby="faqOne" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">
-            Our events are perfect for groups of 4–16 people. For larger groups, get in touch for custom options!
+          <div class="collapse" id="faq1">
+            <div class="faq-answer">
+              Our events are perfect for groups of 4–16 people. For larger groups, just get in touch for custom options!
+            </div>
           </div>
         </div>
       </div>
-      <div class="accordion-item bg-dark text-white">
-        <h2 class="accordion-header" id="faqTwo">
-          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-two" aria-expanded="false" aria-controls="faq-collapse-two">
-            What sports or games can we choose from?
+
+      <!-- FAQ 2 -->
+      <div class="col-12 col-md-6">
+        <div class="faq-card shadow-lg">
+          <button class="faq-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false">
+            <span class="faq-emoji">🎯</span>
+            <span>What sports or games can we choose from?</span>
+            <span class="faq-arrow">&#9662;</span>
           </button>
-        </h2>
-        <div id="faq-collapse-two" class="accordion-collapse collapse" aria-labelledby="faqTwo" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">
-            You can pick from pool, darts, table tennis, mini golf, bowling, snooker, Amercian pool, and more! Mix and match to create your perfect event.
+          <div class="collapse" id="faq2">
+            <div class="faq-answer">
+              Pick from pool, darts, table tennis, mini golf, bowling, snooker, American pool and more! Mix and match for your perfect event.
+            </div>
           </div>
         </div>
       </div>
-      <div class="accordion-item bg-dark text-white">
-        <h2 class="accordion-header" id="faqThree">
-          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-three" aria-expanded="false" aria-controls="faq-collapse-three">
-            Do you handle all the organising?
+
+      <!-- FAQ 3 -->
+      <div class="col-12 col-md-6">
+        <div class="faq-card shadow-lg">
+          <button class="faq-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false">
+            <span class="faq-emoji">📋</span>
+            <span>Do you handle all the organising?</span>
+            <span class="faq-arrow">&#9662;</span>
           </button>
-        </h2>
-        <div id="faq-collapse-three" class="accordion-collapse collapse" aria-labelledby="faqThree" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">
-            Yes! We handle timings, venues, scoring, and logistics. We will also be present to host the event and explain the rules clearly. Just turn up and enjoy.
+          <div class="collapse" id="faq3">
+            <div class="faq-answer">
+              Yes! We run the show—timings, venues, scoring, and logistics. We’re even there to host and explain the rules.
+            </div>
           </div>
         </div>
       </div>
-      <div class="accordion-item bg-dark text-white">
-        <h2 class="accordion-header" id="faqFour">
-          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-four" aria-expanded="false" aria-controls="faq-collapse-four">
-            Can we use the app on our phones?
+
+      <!-- FAQ 4 -->
+      <div class="col-12 col-md-6">
+        <div class="faq-card shadow-lg">
+          <button class="faq-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false">
+            <span class="faq-emoji">📱</span>
+            <span>Can we use the app on our phones?</span>
+            <span class="faq-arrow">&#9662;</span>
           </button>
-        </h2>
-        <div id="faq-collapse-four" class="accordion-collapse collapse" aria-labelledby="faqFour" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">
-            Absolutely! All players get a code to join and follow live scoring and leaderboard updates right from their mobiles. Each event is customised to your group and preferences.
+          <div class="collapse" id="faq4">
+            <div class="faq-answer">
+              Absolutely! Every player gets a code for live scoring and leaderboards, right from their mobiles.
+            </div>
           </div>
         </div>
       </div>
-      <div class="accordion-item bg-dark text-white">
-        <h2 class="accordion-header" id="faqFive">
-          <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq-collapse-five" aria-expanded="false" aria-controls="faq-collapse-five">
-            What if we want prizes or a trophy?
+
+      <!-- FAQ 5 -->
+      <div class="col-12 col-md-6">
+        <div class="faq-card shadow-lg">
+          <button class="faq-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#faq5" aria-expanded="false">
+            <span class="faq-emoji">🏆</span>
+            <span>What if we want prizes or a trophy?</span>
+            <span class="faq-arrow">&#9662;</span>
           </button>
-        </h2>
-        <div id="faq-collapse-five" class="accordion-collapse collapse" aria-labelledby="faqFive" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">
-            We include a trophy for the overall winner, plus optional extra prizes—just ask when booking!
+          <div class="collapse" id="faq5">
+            <div class="faq-answer">
+              There’s a trophy for the winner! Want extra prizes? Just ask when booking.
+            </div>
           </div>
         </div>
       </div>
-      <!-- Add more FAQs as needed! -->
+      <!-- Add more as needed -->
     </div>
   </div>
 </section>
+
 
 <!-- Gallery Carousel Section -->
 <section class="py-5 bg-dark text-center" id="gallery">
