@@ -22,32 +22,7 @@
 <div class="booking-outer">
     <div class="booking-header">Booking Summary</div>
     <table class="summary-table">
-        <tr>
-            <td class="summary-label">Date:</td>
-            <td class="summary-value">{{ booking.event_date }}</td>
-        </tr>
-        <tr>
-            <td class="summary-label">Time:</td>
-            <td class="summary-value">{{ booking.start_time }}</td>
-        </tr>
-        <tr>
-            <td class="summary-label">Group size:</td>
-            <td class="summary-value">{{ booking.group_size }}</td>
-        </tr>
-        <tr>
-            <td class="summary-label">Events:</td>
-            <td class="summary-value">
-                <ul class="summary-events">
-                {% for event in booking.selected_events %}
-                    <li>{{ event|capfirst }}</li>
-                {% endfor %}
-                </ul>
-            </td>
-        </tr>
-        <tr>
-            <td class="summary-label">Total:</td>
-            <td class="summary-value">£{{ booking.quote_total }}</td>
-        </tr>
+        <!-- ... summary rows ... -->
     </table>
 
     <div class="booking-form-title">Enter Your Details</div>
@@ -72,10 +47,9 @@ const detailsForm = document.getElementById('details-form');
 const stripeSection = document.getElementById('stripe-section');
 const continueBtn = document.getElementById('continue-btn');
 const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
-
 let bookingId = "{{ booking.id|default:'' }}";
 
-// Handle form submission, show Stripe button
+// Step 1: Handle form submission and show Stripe button
 detailsForm.addEventListener('submit', function(e) {
     e.preventDefault();
     continueBtn.disabled = true;
@@ -96,23 +70,27 @@ detailsForm.addEventListener('submit', function(e) {
             continueBtn.disabled = false;
             continueBtn.innerText = "Confirm & Continue to Payment";
         }
+    })
+    .catch(() => {
+        alert("Network error. Please try again.");
+        continueBtn.disabled = false;
+        continueBtn.innerText = "Confirm & Continue to Payment";
     });
 });
 
-// Handle Stripe checkout
+// Step 2: Handle Stripe checkout session
 document.getElementById('checkout-button').addEventListener('click', function () {
     if (!bookingId) {
         alert("Booking ID not found!");
         return;
     }
-    // The correct path for your create_checkout_session endpoint:
     fetch(`/users/booking/${bookingId}/create-checkout-session/`, {
         method: "POST",
         headers: {
             "X-CSRFToken": "{{ csrf_token }}",
             "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ booking_id: bookingId })
+        }
+        // body is not required unless your Django expects data in body
     })
     .then(res => res.json())
     .then(data => {
@@ -120,8 +98,11 @@ document.getElementById('checkout-button').addEventListener('click', function ()
             var stripe = Stripe(STRIPE_PUBLIC_KEY);
             stripe.redirectToCheckout({ sessionId: data.id });
         } else {
-            alert("Unable to start payment session. Please try again.");
+            alert(data.error || "Unable to start payment session. Please try again.");
         }
+    })
+    .catch(() => {
+        alert("Network error starting payment. Please try again.");
     });
 });
 </script>

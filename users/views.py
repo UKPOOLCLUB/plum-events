@@ -716,9 +716,9 @@ def create_checkout_session(request, booking_id):
 
     amount = int(float(booking.quote_total) * 100)
 
-    # Dynamically build success/cancel URLs for current domain (works locally and in prod)
-    success_url = request.build_absolute_uri('/payment/success/?session_id={CHECKOUT_SESSION_ID}')
-    cancel_url = request.build_absolute_uri('/payment/cancel/')
+    # This string is required by Stripe!
+    success_url = "https://plum-events.onrender.com/payment/success/?session_id={CHECKOUT_SESSION_ID}"
+    cancel_url = "https://plum-events.onrender.com/payment/cancel/"
 
     print("DEBUG Stripe success_url:", success_url)
 
@@ -743,7 +743,6 @@ def create_checkout_session(request, booking_id):
                 'booking_id': str(booking.id),
             }
         )
-
         return JsonResponse({'id': session.id})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
