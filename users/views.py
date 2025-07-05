@@ -23,6 +23,8 @@ from django.conf import settings
 import stripe
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from django.template.loader import render_to_string
+
 
 def landing_page(request):
     form = ContactForm()
@@ -312,16 +314,7 @@ def pay_now(request):
 
 def send_booking_confirmation_email(booking):
     subject = "Your Plum Events Booking Confirmation"
-    message = (
-        f"Hi {booking.name},\n\n"
-        f"Thank you for booking with Plum Events!\n"
-        f"Your event is confirmed for {booking.event_date} at {booking.start_time}.\n"
-        f"Group size: {booking.group_size}\n"
-        f"Events: {', '.join(booking.selected_events)}\n"
-        f"Total Paid: £{booking.quote_total}\n\n"
-        f"We look forward to seeing you!\n\n"
-        f"Plum Events Team"
-    )
+    message = render_to_string('emails/booking_confirmation.txt', {'booking': booking})
     recipients = [booking.email, "bookings@plumevents.com"]
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
 
@@ -797,6 +790,7 @@ def payment_success(request):
             booking = Booking.objects.filter(id=booking_id).first()
             if booking and not booking.paid:
                 booking.paid = True
+                send_booking_confirmation_email(booking)
                 booking.save()
     except Exception as e:
         print("ERROR: Stripe retrieve failed:", str(e))
