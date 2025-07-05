@@ -775,16 +775,22 @@ def payment_success(request):
     session_id = request.GET.get('session_id')
     booking = None
 
-    # Log the received session_id for debugging
     print("DEBUG: Stripe payment_success received session_id:", session_id)
 
     if not session_id or 'CHECKOUT_SESSION_ID' in str(session_id):
-        # User visited page directly or success_url didn't interpolate
         return HttpResponse("Invalid or missing Stripe session ID. Please do not visit this URL directly.", status=400)
 
     try:
         stripe.api_key = settings.STRIPE_SECRET_KEY
         session = stripe.checkout.Session.retrieve(session_id)
+
+        print("DEBUG: session object:", session)
+
+        # Ensure payment status is 'paid'
+        if session.payment_status != 'paid':
+            print("ERROR: Stripe session not paid. Status:", session.payment_status)
+            return HttpResponse("Payment not completed yet. Please refresh after a moment.", status=400)
+
         booking_id = session.metadata.get('booking_id')
         print("DEBUG: booking_id from session:", booking_id)
         if booking_id:

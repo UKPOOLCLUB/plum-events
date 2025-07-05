@@ -42,7 +42,7 @@ class Booking(models.Model):
     event_date = models.DateField()
     start_time = models.TimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    # Add fields like 'contact_email', 'phone', 'special_requests' as needed
+    paid = models.BooleanField(default=False)  # <--- Add this line!
 
     def __str__(self):
         return f"{self.event_date} {self.start_time} – {self.group_size} people"
