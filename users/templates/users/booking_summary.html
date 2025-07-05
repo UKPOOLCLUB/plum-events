@@ -21,8 +21,33 @@
 
 <div class="booking-outer">
     <div class="booking-header">Booking Summary</div>
-    <table class="summary-table">
-        <!-- ... summary rows ... -->
+<table class="summary-table">
+        <tr>
+            <td class="summary-label">Date:</td>
+            <td class="summary-value">{{ booking.event_date }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Time:</td>
+            <td class="summary-value">{{ booking.start_time }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Group size:</td>
+            <td class="summary-value">{{ booking.group_size }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Events:</td>
+            <td class="summary-value">
+                <ul class="summary-events">
+                {% for event in booking.selected_events %}
+                    <li>{{ event|capfirst }}</li>
+                {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-label">Total:</td>
+            <td class="summary-value">£{{ booking.quote_total }}</td>
+        </tr>
     </table>
 
     <div class="booking-form-title">Enter Your Details</div>
