@@ -721,9 +721,9 @@ def create_checkout_session(request, booking_id):
 
     amount = int(float(booking.quote_total) * 100)
 
-    # 🚩 HARD CODE THE SUCCESS URL, NO ENCODING
-    success_url = "http://127.0.0.1:8000/payment/success/?session_id={CHECKOUT_SESSION_ID}"
-    # or "http://localhost:8000/payment/success/?session_id={CHECKOUT_SESSION_ID}"
+    # Dynamically build success/cancel URLs for current domain (works locally and in prod)
+    success_url = request.build_absolute_uri('/payment/success/?session_id={CHECKOUT_SESSION_ID}')
+    cancel_url = request.build_absolute_uri('/payment/cancel/')
 
     print("DEBUG Stripe success_url:", success_url)
 
@@ -743,7 +743,7 @@ def create_checkout_session(request, booking_id):
             mode='payment',
             customer_email=getattr(booking, 'email', None),
             success_url=success_url,
-            cancel_url="http://127.0.0.1:8000/payment/cancel/",
+            cancel_url=cancel_url,
             metadata={
                 'booking_id': str(booking.id),
             }

@@ -6,6 +6,8 @@ DEBUG = False
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
+USE_X_FORWARDED_HOST = True
+
 ALLOWED_HOSTS = [
     'plum-events.onrender.com',
     'www.plumevents.com',
@@ -28,6 +30,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'contact@plumevents.co.uk')
+
+print("DEBUG: STRIPE_SECRET_KEY (first 5 chars):", os.environ.get('STRIPE_SECRET_KEY', '')[:5])
 
 # Stripe keys from environment (load these in your .env or Render dashboard)
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
