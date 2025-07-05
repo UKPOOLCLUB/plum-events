@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, reverse, get_object_or_404
 from django.http import JsonResponse
 from events.models import Event, GAME_CHOICES
 from .models import Participant, EventAvailability, Booking
@@ -718,7 +718,7 @@ def create_checkout_session(request, booking_id):
 
     # This string is required by Stripe!
     success_url = "https://plum-events.onrender.com/payment/success/?session_id={CHECKOUT_SESSION_ID}"
-    cancel_url = "https://plum-events.onrender.com/payment/cancel/"
+    cancel_url = request.build_absolute_uri(reverse('payment_cancel'))
 
     print("DEBUG Stripe success_url:", success_url)
 

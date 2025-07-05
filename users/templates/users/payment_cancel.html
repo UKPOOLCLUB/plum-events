@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 480px; margin: 60px auto; background: #1c1c1c; padding: 32px 28px; border-radius: 16px; border: 2px solid #ee5253; color: #fff; text-align: center;">
+    <h2 style="color: #ee5253;">Payment Cancelled</h2>
+    <p>Your payment was cancelled. No money has been taken. If you wish, you can try again.</p>
+    <a href="{% url 'booking_summary' %}" class="btn btn-primary" style="margin-top: 22px;">Return to Booking</a>
+</div>
+{% endblock %}
