@@ -13,6 +13,7 @@ from events.models import Killer, KillerPlayer, KillerConfig
 from events.models import PoolLeagueConfig, PoolLeagueMatch, PoolLeaguePlayer
 from .forms import BookingContactForm, ContactForm
 from .models import Booking, ContactEnquiry
+from .forms import BookingContactForm
 from django.db.models import Sum, Count
 from datetime import date, timedelta, time, datetime
 from random import shuffle
@@ -21,7 +22,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 import stripe
 from django.views.decorators.csrf import csrf_exempt
-
+from django.http import HttpResponse
 
 def landing_page(request):
     form = ContactForm()
@@ -202,12 +203,6 @@ def confirm_booking(request):
     # If GET or missing data, redirect to calendar
     return redirect('calendar_page')
 
-
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from .forms import BookingContactForm
-from .models import Booking
-from datetime import datetime
 
 def booking_summary(request):
     group_size = request.session.get('group_size')
@@ -780,17 +775,29 @@ def booking_confirm(request, booking_id):
 def payment_success(request):
     session_id = request.GET.get('session_id')
     booking = None
-    if session_id:
+
+    # Log the received session_id for debugging
+    print("DEBUG: Stripe payment_success received session_id:", session_id)
+
+    if not session_id or 'CHECKOUT_SESSION_ID' in str(session_id):
+        # User visited page directly or success_url didn't interpolate
+        return HttpResponse("Invalid or missing Stripe session ID. Please do not visit this URL directly.", status=400)
+
+    try:
         stripe.api_key = settings.STRIPE_SECRET_KEY
         session = stripe.checkout.Session.retrieve(session_id)
         booking_id = session.metadata.get('booking_id')
+        print("DEBUG: booking_id from session:", booking_id)
         if booking_id:
             booking = Booking.objects.filter(id=booking_id).first()
-            if booking:
+            if booking and not booking.paid:
                 booking.paid = True
                 booking.save()
-    return render(request, 'users/payment_success.html', {'booking': booking})
+    except Exception as e:
+        print("ERROR: Stripe retrieve failed:", str(e))
+        return HttpResponse("There was a problem confirming your payment. Please contact us if this keeps happening.", status=500)
 
+    return render(request, 'users/payment_success.html', {'booking': booking})
 
 def payment_cancel(request):
     return render(request, 'payment_cancel.html')
