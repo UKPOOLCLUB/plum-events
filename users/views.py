@@ -225,35 +225,40 @@ def booking_summary(request):
 
     if request.method == 'POST':
         form = BookingContactForm(request.POST)
-        if form.is_valid():
-            # Always create a NEW booking if no valid booking_id in session
-            if not booking:
-                booking = Booking.objects.create(
-                    name=form.cleaned_data['name'],
-                    email=form.cleaned_data['email'],
-                    phone=form.cleaned_data['phone'],
-                    event_date=event_date,
-                    start_time=start_time,
-                    group_size=group_size,
-                    selected_events=selected_events,
-                    quote_total=quote_total,
-                )
-                request.session['booking_id'] = booking.id
-                print(f"DEBUG: Created new Booking #{booking.id}")
-            else:
-                # Update existing booking
-                booking.name = form.cleaned_data['name']
-                booking.email = form.cleaned_data['email']
-                booking.phone = form.cleaned_data['phone']
-                booking.save()
-                print(f"DEBUG: Updated Booking #{booking.id}")
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        try:
+            if form.is_valid():
+                if not booking:
+                    # --- Fix start_time type ---
+                    if isinstance(start_time, str):
+                        start_time_obj = datetime.strptime(start_time, "%H:%M").time()
+                    else:
+                        start_time_obj = start_time
+
+                    booking = Booking.objects.create(
+                        name=form.cleaned_data['name'],
+                        email=form.cleaned_data['email'],
+                        phone=form.cleaned_data['phone'],
+                        event_date=event_date,
+                        start_time=start_time_obj,  # <-- pass as time object!
+                        group_size=group_size,
+                        selected_events=selected_events,
+                        quote_total=quote_total,
+                    )
+                    request.session['booking_id'] = booking.id
+                else:
+                    # ... update logic unchanged ...
+                    booking.name = form.cleaned_data['name']
+                    booking.email = form.cleaned_data['email']
+                    booking.phone = form.cleaned_data['phone']
+                    booking.save()
                 return JsonResponse({'success': True, 'booking_id': booking.id})
-            # fallback for non-AJAX
-            return redirect('pay_now', booking_id=booking.id)
-        else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            else:
+                print("DEBUG: Form errors:", form.errors)
                 return JsonResponse({'error': 'Please fill in all fields.'})
+        except Exception as e:
+            import traceback
+            print("ERROR: Exception in booking_summary POST:", traceback.format_exc())
+            return JsonResponse({'error': f'Server error: {e}'}, status=500)
 
     else:
         form = BookingContactForm(initial={
