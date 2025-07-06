@@ -12,54 +12,43 @@
 
 <table class="table table-dark table-bordered text-center align-middle">
   <thead>
-<tr class="{% if player == current_player %}highlight-row{% endif %}">
-  <td>
-    {% if player.finish_rank == 1 %}
-      🥇
-    {% elif player.finish_rank == 2 %}
-      🥈
-    {% elif player.finish_rank == 3 %}
-      🥉
-    {% else %}
-      {{ player.finish_rank }}
-    {% endif %}
-  </td>
-  <td>{{ player.participant.username }}</td>
-  <td>{{ player.calculated_played }}</td>
-  <td>{{ player.calculated_wins }}</td>
-  {% if league_completed %}
-    <td>
-      {% if player.points_awarded is not None and player.points_awarded != 0 %}
-        {{ player.points_awarded|floatformat:1 }}
-      {% elif player.points_awarded == 0 %}
-        0
-      {% else %}
-        –
+    <tr>
+      <th>Rank</th>
+      <th>Player</th>
+      <th>Played</th>
+      <th>Wins</th>
+      {% if league_completed %}
+        <th>Points</th>
       {% endif %}
-    </td>
-  {% endif %}
-</tr>
-
+    </tr>
   </thead>
   <tbody>
     {% for player in all_players %}
       <tr class="{% if player == current_player %}highlight-row{% endif %}">
         <td>
-          {% if forloop.counter == 1 %}
+          {% if player.finish_rank == 1 %}
             🥇
-          {% elif forloop.counter == 2 %}
+          {% elif player.finish_rank == 2 %}
             🥈
-          {% elif forloop.counter == 3 %}
+          {% elif player.finish_rank == 3 %}
             🥉
           {% else %}
-            {{ forloop.counter }}
+            {{ player.finish_rank }}
           {% endif %}
         </td>
         <td>{{ player.participant.username }}</td>
         <td>{{ player.calculated_played }}</td>
         <td>{{ player.calculated_wins }}</td>
         {% if league_completed %}
-          <td>{{ player.points_awarded|default:"–" }}</td>
+          <td>
+            {% if player.points_awarded is not None and player.points_awarded != 0 %}
+              {{ player.points_awarded|floatformat:1 }}
+            {% elif player.points_awarded == 0 %}
+              0
+            {% else %}
+              –
+            {% endif %}
+          </td>
         {% endif %}
       </tr>
     {% endfor %}
