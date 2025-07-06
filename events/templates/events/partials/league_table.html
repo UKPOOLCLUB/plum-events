@@ -9,7 +9,9 @@
       <th>Player</th>
       <th>Played</th>
       <th>Wins</th>
-      <th>Points</th>
+      {% if league_completed %}
+        <th>Points</th>
+      {% endif %}
     </tr>
   </thead>
   <tbody>
@@ -19,7 +21,9 @@
         <td>{{ player.participant.username }}</td>
         <td>{{ player.calculated_played }}</td>
         <td>{{ player.calculated_wins }}</td>
-        <td>{{ player.points_awarded|default:"–" }}</td>
+        {% if league_completed %}
+          <td>{{ player.points_awarded|default:"–" }}</td>
+        {% endif %}
       </tr>
     {% endfor %}
   </tbody>
