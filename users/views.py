@@ -781,6 +781,7 @@ def payment_success(request):
     booking = None
 
     print("DEBUG: payment_success called with session_id:", session_id)
+    print("DEBUG: Session before clearing:", dict(request.session))
 
     if not session_id or 'CHECKOUT_SESSION_ID' in str(session_id):
         print("ERROR: Invalid or missing Stripe session ID:", session_id)
@@ -814,6 +815,17 @@ def payment_success(request):
                 print("ERROR: No booking found with ID:", booking_id)
         else:
             print("ERROR: No booking_id found in Stripe session metadata.")
+
+        # --- Clear all booking-related session data ---
+        booking_keys = [
+            'group_size', 'selected_events', 'quote_total',
+            'event_date', 'start_time', 'booking_id'
+        ]
+        for key in booking_keys:
+            if key in request.session:
+                print(f"DEBUG: Clearing session key: {key}")
+                request.session.pop(key)
+        print("DEBUG: Session after clearing:", dict(request.session))
 
     except Exception as e:
         print("ERROR: Stripe retrieve failed:", str(e))
