@@ -12,59 +12,60 @@
 
 
   <!-- Leaderboard Table -->
-  <div class="table-responsive">
-    <table class="table table-dark table-bordered align-middle text-center">
-        <thead>
-          <tr>
-            <th>Player</th>
-            {% for code in selected_games %}
-              <th>
-                  {% with name=selected_game_names|index:forloop.counter0 %}
-                    {% game_link code event as link %}
-                    <a href="{{ link }}" class="text-decoration-none text-light {% if name == active_game %}text-accent fw-bold{% endif %}" title="{{ name }}">
-                      {% if code == "mini_golf" %}
-                        ⛳️
-                      {% elif code == "table_tennis" %}
-                        🏓
-                      {% elif code == "pool_league" %}
-                        🎱
-                      {% elif code == "e_darts" %}
-                        🎯
-                      {% elif code == "killer_pool" %}
-                        💀
-                      {% else %}
-                        ❓
-                      {% endif %}
-                    </a>
-                  {% endwith %}
-                </th>
-            {% endfor %}
-            <th>Total</th>
-          </tr>
-        </thead>
+<div class="table-responsive">
+  <table class="table table-dark table-bordered align-middle text-center">
+      <thead>
+        <tr>
+          <th>Player</th>
+          {% for code in selected_games %}
+            <th>
+                {% with name=selected_game_names|index:forloop.counter0 %}
+                  {% game_link code event as link %}
+                  <a href="{{ link }}" class="text-decoration-none text-light {% if name == active_game %}text-accent fw-bold{% endif %}" title="{{ name }}">
+                    {% if code == "mini_golf" %}
+                      ⛳️
+                    {% elif code == "table_tennis" %}
+                      🏓
+                    {% elif code == "pool_league" %}
+                      🎱
+                    {% elif code == "e_darts" %}
+                      🎯
+                    {% elif code == "killer_pool" %}
+                      💀
+                    {% else %}
+                      ❓
+                    {% endif %}
+                  </a>
+                {% endwith %}
+              </th>
+          {% endfor %}
+          <th>Total</th>
+        </tr>
+      </thead>
 
-        <tbody>
-            {% for row in leaderboard %}
-                <tr>
-                    <td class="fw-bold">
-                      {% if forloop.counter == 1 %}
-                        🥇
-                      {% elif forloop.counter == 2 %}
-                        🥈
-                      {% elif forloop.counter == 3 %}
-                        🥉
-                      {% endif %}
-                      {{ row.username }}
-                    </td>
-                    {% for game in event_names %}
-                        <td>{{ row.scores|dict_get:game }}</td>
-                    {% endfor %}
-                    <td><strong class="text-accent">{{ row.total }}</strong></td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-  </div>
+      <tbody>
+          {% for row in leaderboard %}
+              <tr>
+                  <td class="fw-bold">
+                    {% if forloop.counter == 1 %}
+                      🥇
+                    {% elif forloop.counter == 2 %}
+                      🥈
+                    {% elif forloop.counter == 3 %}
+                      🥉
+                    {% endif %}
+                    {{ row.username }}
+                  </td>
+                  {% for game in event_names %}
+                      <td>{{ row.scores|dict_get:game|ceil_int }}</td>
+                  {% endfor %}
+                  <td><strong class="text-accent">{{ row.total|ceil_int }}</strong></td>
+              </tr>
+          {% endfor %}
+      </tbody>
+  </table>
+</div>
+
 </div>
 
 <style>

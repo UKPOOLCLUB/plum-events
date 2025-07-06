@@ -1,6 +1,8 @@
 from django import template
 from django.urls import reverse
 register = template.Library()
+import math
+
 
 @register.filter
 def index(sequence, position):
@@ -33,3 +35,12 @@ def game_link(code, event):
     elif code == "killer_pool":
         return reverse("killer_game", args=[event.id])
     return "#"
+
+
+@register.filter
+def ceil_int(value):
+    """Round up and display as int (ceil)."""
+    try:
+        return str(int(math.ceil(float(value))))
+    except (ValueError, TypeError):
+        return value
