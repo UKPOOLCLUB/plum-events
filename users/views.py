@@ -315,10 +315,9 @@ def pay_now(request):
 def send_booking_confirmation_email(booking):
     subject = "Your Plum Events Booking Confirmation"
     message = render_to_string('emails/booking_confirmation.txt', {'booking': booking})
-    recipients = [booking.email, "bookings@plumevents.com"]
+    recipients = [booking.email, "contact@plumevents.com"]
     print(f"DEBUG: Sending email to {recipients} with subject '{subject}' and message:\n{message}")
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
-
 
 
 def contact_us(request):
