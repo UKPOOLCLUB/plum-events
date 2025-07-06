@@ -316,8 +316,19 @@ def send_booking_confirmation_email(booking):
     subject = "Your Plum Events Booking Confirmation"
     message = render_to_string('emails/booking_confirmation.txt', {'booking': booking})
     recipients = [booking.email, "contact@plumevents.co.uk"]
-    print(f"DEBUG: Sending email to {recipients} with subject '{subject}' and message:\n{message}")
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients)
+
+    print("DEBUG: Preparing to send email.")
+    print(f"DEBUG: Subject: {subject}")
+    print(f"DEBUG: Recipients: {recipients}")
+    print(f"DEBUG: From: {settings.DEFAULT_FROM_EMAIL}")
+    print(f"DEBUG: Message Body:\n{message}")
+
+    try:
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients, fail_silently=False)
+        print("DEBUG: Email sent successfully!")
+    except Exception as e:
+        print("ERROR: Email sending failed:", e)
+
 
 
 def contact_us(request):
@@ -769,16 +780,17 @@ def payment_success(request):
     session_id = request.GET.get('session_id')
     booking = None
 
-    print("DEBUG: Stripe payment_success received session_id:", session_id)
+    print("DEBUG: payment_success called with session_id:", session_id)
 
     if not session_id or 'CHECKOUT_SESSION_ID' in str(session_id):
+        print("ERROR: Invalid or missing Stripe session ID:", session_id)
         return HttpResponse("Invalid or missing Stripe session ID. Please do not visit this URL directly.", status=400)
 
     try:
         stripe.api_key = settings.STRIPE_SECRET_KEY
+        print("DEBUG: Attempting to retrieve Stripe session...")
         session = stripe.checkout.Session.retrieve(session_id)
-
-        print("DEBUG: session object:", session)
+        print("DEBUG: Stripe session retrieved:", session)
 
         # Ensure payment status is 'paid'
         if session.payment_status != 'paid':
@@ -786,13 +798,23 @@ def payment_success(request):
             return HttpResponse("Payment not completed yet. Please refresh after a moment.", status=400)
 
         booking_id = session.metadata.get('booking_id')
-        print("DEBUG: booking_id from session:", booking_id)
+        print("DEBUG: booking_id from session.metadata:", booking_id)
         if booking_id:
             booking = Booking.objects.filter(id=booking_id).first()
+            print("DEBUG: Booking found in DB:", booking)
             if booking and not booking.paid:
                 booking.paid = True
+                print("DEBUG: Booking marked as paid. About to send confirmation email.")
                 send_booking_confirmation_email(booking)
                 booking.save()
+                print("DEBUG: Booking saved with paid=True")
+            elif booking and booking.paid:
+                print("DEBUG: Booking already marked as paid; no email sent.")
+            else:
+                print("ERROR: No booking found with ID:", booking_id)
+        else:
+            print("ERROR: No booking_id found in Stripe session metadata.")
+
     except Exception as e:
         print("ERROR: Stripe retrieve failed:", str(e))
         return HttpResponse("There was a problem confirming your payment. Please contact us if this keeps happening.", status=500)
