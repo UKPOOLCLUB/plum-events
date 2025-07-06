@@ -691,8 +691,9 @@ def submit_edarts_group(request, event_id, group_id):
     participant_id = request.session.get('participant_id')
     participant = get_object_or_404(Participant, id=participant_id, event=event)
 
-    # Only allow scorer or host to submit
-    if group.scorekeeper != participant:
+    # Allow scorekeeper OR host to submit
+    is_host = event.host == participant.username  # Or .user if that's your user model
+    if group.scorekeeper != participant and not is_host:
         messages.error(request, "You are not allowed to submit results for this group.")
         return redirect('enter_edarts_results', event_id=event.id)
 
