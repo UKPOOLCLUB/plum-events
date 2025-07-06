@@ -66,70 +66,96 @@
 {% if booking.id %}
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-console.log("Stripe booking page JS loaded!");
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Stripe booking page JS loaded!");
 
-const detailsForm = document.getElementById('details-form');
-const stripeSection = document.getElementById('stripe-section');
-const continueBtn = document.getElementById('continue-btn');
-const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
-let bookingId = "{{ booking.id|default:'' }}";
+    const detailsForm = document.getElementById('details-form');
+    const stripeSection = document.getElementById('stripe-section');
+    const continueBtn = document.getElementById('continue-btn');
+    const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
+    let bookingId = "{{ booking.id|default:'' }}";
 
-// Step 1: Handle form submission and show Stripe button
-detailsForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    continueBtn.disabled = true;
-    continueBtn.innerText = "Processing...";
-    fetch(detailsForm.action, {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-        body: new FormData(detailsForm)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            detailsForm.style.display = "none";
-            stripeSection.style.display = "block";
-            if (data.booking_id) bookingId = data.booking_id;
-        } else if (data.error) {
-            alert(data.error);
-            continueBtn.disabled = false;
-            continueBtn.innerText = "Confirm & Continue to Payment";
-        }
-    })
-    .catch(() => {
-        alert("Network error. Please try again.");
-        continueBtn.disabled = false;
-        continueBtn.innerText = "Confirm & Continue to Payment";
-    });
-});
+    if (detailsForm) {
+        detailsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            continueBtn.disabled = true;
+            continueBtn.innerText = "Processing...";
+            console.log("[DEBUG] Form submission intercepted via JS");
 
-// Step 2: Handle Stripe checkout session
-document.getElementById('checkout-button').addEventListener('click', function () {
-    if (!bookingId) {
-        alert("Booking ID not found!");
-        return;
+            fetch(detailsForm.action || window.location.pathname, {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                body: new FormData(detailsForm)
+            })
+            .then(response => {
+                // Check for non-JSON (500 error) responses:
+                if (!response.ok) {
+                    throw new Error("Network/server error: " + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("[DEBUG] Form AJAX response:", data);
+                if (data.success) {
+                    detailsForm.style.display = "none";
+                    stripeSection.style.display = "block";
+                    if (data.booking_id) bookingId = data.booking_id;
+                } else if (data.error) {
+                    alert(data.error);
+                    continueBtn.disabled = false;
+                    continueBtn.innerText = "Confirm & Continue to Payment";
+                }
+            })
+            .catch((err) => {
+                alert("Network/server error. Please try again. " + err);
+                continueBtn.disabled = false;
+                continueBtn.innerText = "Confirm & Continue to Payment";
+            });
+        });
     }
-    fetch(`/users/booking/${bookingId}/create-checkout-session/`, {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/json"
-        }
-        // body is not required unless your Django expects data in body
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.id) {
-            var stripe = Stripe(STRIPE_PUBLIC_KEY);
-            stripe.redirectToCheckout({ sessionId: data.id });
-        } else {
-            alert(data.error || "Unable to start payment session. Please try again.");
-        }
-    })
-    .catch(() => {
-        alert("Network error starting payment. Please try again.");
-    });
+
+    // Stripe payment button logic:
+    const checkoutBtn = document.getElementById('checkout-button');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function () {
+            if (!bookingId) {
+                alert("Booking ID not found!");
+                return;
+            }
+            checkoutBtn.disabled = true;
+            checkoutBtn.innerText = "Connecting to Stripe...";
+            console.log("[DEBUG] Requesting Stripe checkout for booking:", bookingId);
+
+            fetch(`/users/booking/${bookingId}/create-checkout-session/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Stripe checkout error: " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                if (data.id) {
+                    var stripe = Stripe(STRIPE_PUBLIC_KEY);
+                    stripe.redirectToCheckout({ sessionId: data.id });
+                } else {
+                    alert(data.error || "Unable to start payment session. Please try again.");
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.innerText = "Pay Now";
+                }
+            })
+            .catch((err) => {
+                alert("Network error starting payment. Please try again. " + err);
+                checkoutBtn.disabled = false;
+                checkoutBtn.innerText = "Pay Now";
+            });
+        });
+    }
 });
 </script>
 {% endif %}
+
 {% endblock %}
