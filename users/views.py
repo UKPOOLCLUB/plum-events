@@ -209,7 +209,7 @@ def confirm_booking(request):
 def booking_summary(request):
     group_size = request.session.get('group_size')
     selected_events = request.session.get('selected_events')
-    num_events = len(selected_events)
+    num_events = len(selected_events or [])
     expected_duration = get_expected_duration(num_events)
     quote_total = request.session.get('quote_total')
     event_date = request.session.get('event_date')
@@ -220,13 +220,13 @@ def booking_summary(request):
     if not all([group_size, selected_events, quote_total, event_date, start_time]):
         return redirect('calendar_page')
 
-    # Find or create a booking object in session
     booking_id = request.session.get('booking_id')
     booking = Booking.objects.filter(id=booking_id).first() if booking_id else None
 
     if request.method == 'POST':
         form = BookingContactForm(request.POST)
         if form.is_valid():
+            # Always create a NEW booking if no valid booking_id in session
             if not booking:
                 booking = Booking.objects.create(
                     name=form.cleaned_data['name'],
@@ -239,16 +239,21 @@ def booking_summary(request):
                     quote_total=quote_total,
                 )
                 request.session['booking_id'] = booking.id
+                print(f"DEBUG: Created new Booking #{booking.id}")
             else:
+                # Update existing booking
                 booking.name = form.cleaned_data['name']
                 booking.email = form.cleaned_data['email']
                 booking.phone = form.cleaned_data['phone']
                 booking.save()
-            # 🚩 This is the important line:
-            return JsonResponse({'success': True, 'booking_id': booking.id})
+                print(f"DEBUG: Updated Booking #{booking.id}")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'booking_id': booking.id})
+            # fallback for non-AJAX
+            return redirect('pay_now', booking_id=booking.id)
         else:
-            return JsonResponse({'error': 'Please fill in all fields.'})
-
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Please fill in all fields.'})
 
     else:
         form = BookingContactForm(initial={
@@ -259,7 +264,7 @@ def booking_summary(request):
 
     context = {
         'booking': {
-            'id': booking.id if booking else None,
+            'id': booking.id if booking else "",
             'group_size': group_size,
             'selected_events': selected_events,
             'quote_total': quote_total,
