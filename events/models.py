@@ -73,9 +73,9 @@ class MiniGolfConfig(models.Model):
     group_size_max = models.IntegerField(default=4)
     points_first = models.IntegerField(default=50)
     points_second = models.IntegerField(default=35)
-    points_third = models.IntegerField(default=20)
-    points_fourth = models.IntegerField(default=10)
-    points_fifth = models.IntegerField(default=5)
+    points_third = models.IntegerField(default=25)
+    points_fourth = models.IntegerField(default=15)
+    points_fifth = models.IntegerField(default=10)
 
 
 class PoolLeagueConfig(models.Model):

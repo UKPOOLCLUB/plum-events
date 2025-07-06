@@ -155,7 +155,6 @@ def redirect_to_golf_group(request, event_code):
 def submit_golf_scorecard(request, group_id):
     group = get_object_or_404(MiniGolfGroup, id=group_id)
 
-    # Safely get scorecard or handle error
     try:
         scorecard = MiniGolfScorecard.objects.get(group=group)
     except MiniGolfScorecard.DoesNotExist:
@@ -169,37 +168,62 @@ def submit_golf_scorecard(request, group_id):
         if len(hole_scores) < holes:
             return JsonResponse({"success": False, "error": f"{username} has not completed all holes."})
 
-    # Calculate totals
+    # Step 1: Calculate player totals
     player_totals = []
     for username, hole_scores in scorecard.data.items():
         total = sum(int(v) for v in hole_scores.values())
         player_totals.append((username, total))
+    player_totals.sort(key=lambda x: x[1])  # Lower is better
 
-    player_totals.sort(key=lambda x: x[1])  # sort by strokes
+    # Step 2: Points for each finishing position (extend as needed)
+    points_per_place = [
+        config.points_first,
+        config.points_second,
+        config.points_third,
+        config.points_fourth,
+        config.points_fifth,
+        config.points_sixth if hasattr(config, 'points_sixth') else 0,
+        config.points_seventh if hasattr(config, 'points_seventh') else 0,
+        config.points_eighth if hasattr(config, 'points_eighth') else 0,
+    ]
+    # Fill with zeros for places beyond defined points
+    while len(points_per_place) < len(player_totals):
+        points_per_place.append(0)
 
-    for i, (username, strokes) in enumerate(player_totals):
-        participant = Participant.objects.get(username=username, event=group.event)
+    # Step 3: Assign places with tie splitting
+    results = []
+    i = 0
+    while i < len(player_totals):
+        tie_group = [player_totals[i]]
+        # Find all others with same score (tie)
+        while i + len(tie_group) < len(player_totals) and player_totals[i + len(tie_group)][1] == tie_group[0][1]:
+            tie_group.append(player_totals[i + len(tie_group)])
 
-        if i == 0:
-            points = config.points_first
-        elif i == 1:
-            points = config.points_second
-        elif i == 2:
-            points = config.points_third
-        elif i == 3:
-            points = config.points_fourth
-        elif i == 4:
-            points = config.points_fifth
-        else:
-            points = 0
+        # Get position range for this tie group
+        pos_start = i
+        pos_end = i + len(tie_group) - 1
+        # Split the points for the tied positions
+        points_to_split = points_per_place[pos_start:pos_end + 1]
+        avg_points = sum(points_to_split) / len(tie_group) if tie_group else 0
 
+        for idx, (username, strokes) in enumerate(tie_group):
+            results.append({
+                "username": username,
+                "strokes": strokes,
+                "position": pos_start + 1,  # 1-based index
+                "points": avg_points
+            })
+        i += len(tie_group)
+
+    # Step 4: Save results to each participant
+    for res in results:
+        participant = Participant.objects.get(username=res["username"], event=group.event)
         if not participant.kept_scores:
             participant.kept_scores = {}
-
         participant.kept_scores["mini_golf"] = {
-            "points": points,
-            "position": i + 1,
-            "strokes": strokes,
+            "points": res["points"],
+            "position": res["position"],
+            "strokes": res["strokes"],
         }
         participant.save()
 
