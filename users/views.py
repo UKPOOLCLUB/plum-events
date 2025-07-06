@@ -251,14 +251,28 @@ def booking_summary(request):
                     booking.email = form.cleaned_data['email']
                     booking.phone = form.cleaned_data['phone']
                     booking.save()
-                return JsonResponse({'success': True, 'booking_id': booking.id})
+
+                # ---- THIS IS THE KEY ----
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'booking_id': booking.id})
+                else:
+                    # User did a normal (non-AJAX) POST: redirect or render HTML
+                    return redirect('booking_summary')
+
             else:
                 print("DEBUG: Form errors:", form.errors)
-                return JsonResponse({'error': 'Please fill in all fields.'})
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'error': 'Please fill in all fields.'})
+                else:
+                    # Fall back to HTML render with errors
+                    messages.error(request, 'Please fill in all fields.')
         except Exception as e:
             import traceback
             print("ERROR: Exception in booking_summary POST:", traceback.format_exc())
-            return JsonResponse({'error': f'Server error: {e}'}, status=500)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': f'Server error: {e}'}, status=500)
+            else:
+                messages.error(request, 'Server error. Please try again.')
 
     else:
         form = BookingContactForm(initial={
@@ -281,6 +295,7 @@ def booking_summary(request):
         'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,
     }
     return render(request, 'users/booking_summary.html', context)
+
 
 
 def pay_now(request):
