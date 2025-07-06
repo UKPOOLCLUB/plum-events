@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="booking-outer">
+    <div class="booking-header">Payment</div>
+    <table class="summary-table">
+        <tr>
+            <td class="summary-label">Date:</td>
+            <td class="summary-value">{{ booking.event_date }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Time:</td>
+            <td class="summary-value">{{ booking.start_time }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Group size:</td>
+            <td class="summary-value">{{ booking.group_size }}</td>
+        </tr>
+        <tr>
+            <td class="summary-label">Events:</td>
+            <td class="summary-value">
+                <ul class="summary-events">
+                {% for event in booking.selected_events %}
+                    <li>{{ event|capfirst }}</li>
+                {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td class="summary-label">Total:</td>
+            <td class="summary-value">£{{ booking.quote_total }}</td>
+        </tr>
+    </table>
+    <button id="checkout-button" class="btn btn-primary w-100 mb-2">Pay Now</button>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.getElementById('checkout-button').addEventListener('click', function () {
+    fetch("{% url 'create_checkout_session' booking.id %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.id) {
+            var stripe = Stripe("{{ stripe_public_key }}");
+            stripe.redirectToCheckout({ sessionId: data.id });
+        } else {
+            alert(data.error || "Unable to start payment session. Please try again.");
+        }
+    })
+    .catch(() => {
+        alert("Network error starting payment. Please try again.");
+    });
+});
+</script>
+{% endblock %}

@@ -214,6 +214,7 @@ def booking_summary(request):
     quote_total = request.session.get('quote_total')
     event_date = request.session.get('event_date')
     if isinstance(event_date, str):
+        from datetime import datetime
         event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
     start_time = request.session.get('start_time')
 
@@ -244,11 +245,9 @@ def booking_summary(request):
                 booking.email = form.cleaned_data['email']
                 booking.phone = form.cleaned_data['phone']
                 booking.save()
-            # 🚩 This is the important line:
-            return JsonResponse({'success': True, 'booking_id': booking.id})
-        else:
-            return JsonResponse({'error': 'Please fill in all fields.'})
-
+            # 🚩 Redirect to payment summary page
+            return redirect('booking_payment', booking_id=booking.id)
+        # If invalid, fall through to re-render form with errors
 
     else:
         form = BookingContactForm(initial={
@@ -259,7 +258,6 @@ def booking_summary(request):
 
     context = {
         'booking': {
-            'id': booking.id if booking else None,
             'group_size': group_size,
             'selected_events': selected_events,
             'quote_total': quote_total,
@@ -268,9 +266,9 @@ def booking_summary(request):
             'expected_duration': expected_duration,
         },
         'form': form,
-        'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,
     }
     return render(request, 'users/booking_summary.html', context)
+
 
 
 def pay_now(request):
@@ -774,6 +772,15 @@ def booking_confirm(request, booking_id):
         'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,  # <-- UPDATED
     }
     return render(request, 'users/booking_summary.html', context)  # Use your actual template filename
+
+
+def booking_payment(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    context = {
+        'booking': booking,
+        'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,
+    }
+    return render(request, 'users/booking_payment.html', context)
 
 
 def payment_success(request):

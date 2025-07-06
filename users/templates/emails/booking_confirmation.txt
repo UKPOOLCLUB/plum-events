@@ -6,7 +6,7 @@ Group size: {{ booking.group_size }}
 Events: {{ booking.selected_events|join:", " }}
 Total Paid: £{{ booking.quote_total }}
 
-If you hhave any special requests please reply to this email.
+If you have any special requests please reply to this email.
 We look forward to seeing you!
 
 Plum Events Team

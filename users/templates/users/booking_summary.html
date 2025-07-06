@@ -51,85 +51,11 @@
     </table>
 
     <div class="booking-form-title">Enter Your Details</div>
-    <form id="details-form" method="post" autocomplete="off" style="padding: 0 18px 18px 18px;">
+    <form method="post" autocomplete="off" style="padding: 0 18px 18px 18px;">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit" class="btn btn-primary w-100 mb-2" id="continue-btn">Confirm & Continue to Payment</button>
+        <button type="submit" class="btn btn-primary w-100 mb-2">Confirm & Continue to Payment</button>
         <a href="{% url 'get_quote' %}" class="btn btn-warning w-100">&#8592; Back</a>
     </form>
-
-    <div id="stripe-section" style="display: none; padding: 0 18px 18px 18px;">
-        <button id="checkout-button" class="btn btn-primary w-100 mb-2">Pay Now</button>
-    </div>
 </div>
-
-{% if booking.id %}
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-console.log("Stripe booking page JS loaded!");
-
-const detailsForm = document.getElementById('details-form');
-const stripeSection = document.getElementById('stripe-section');
-const continueBtn = document.getElementById('continue-btn');
-const STRIPE_PUBLIC_KEY = "{{ stripe_public_key }}";
-let bookingId = "{{ booking.id|default:'' }}";
-
-// Step 1: Handle form submission and show Stripe button
-detailsForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    continueBtn.disabled = true;
-    continueBtn.innerText = "Processing...";
-    fetch(detailsForm.action, {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-        body: new FormData(detailsForm)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            detailsForm.style.display = "none";
-            stripeSection.style.display = "block";
-            if (data.booking_id) bookingId = data.booking_id;
-        } else if (data.error) {
-            alert(data.error);
-            continueBtn.disabled = false;
-            continueBtn.innerText = "Confirm & Continue to Payment";
-        }
-    })
-    .catch(() => {
-        alert("Network error. Please try again.");
-        continueBtn.disabled = false;
-        continueBtn.innerText = "Confirm & Continue to Payment";
-    });
-});
-
-// Step 2: Handle Stripe checkout session
-document.getElementById('checkout-button').addEventListener('click', function () {
-    if (!bookingId) {
-        alert("Booking ID not found!");
-        return;
-    }
-    fetch(`/users/booking/${bookingId}/create-checkout-session/`, {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": "{{ csrf_token }}",
-            "Content-Type": "application/json"
-        }
-        // body is not required unless your Django expects data in body
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.id) {
-            var stripe = Stripe(STRIPE_PUBLIC_KEY);
-            stripe.redirectToCheckout({ sessionId: data.id });
-        } else {
-            alert(data.error || "Unable to start payment session. Please try again.");
-        }
-    })
-    .catch(() => {
-        alert("Network error starting payment. Please try again.");
-    });
-});
-</script>
-{% endif %}
 {% endblock %}
