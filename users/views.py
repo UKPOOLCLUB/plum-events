@@ -209,7 +209,7 @@ def confirm_booking(request):
 def booking_summary(request):
     group_size = request.session.get('group_size')
     selected_events = request.session.get('selected_events')
-    num_events = len(selected_events)
+    num_events = len(selected_events or [])
     expected_duration = get_expected_duration(num_events)
     quote_total = request.session.get('quote_total')
     event_date = request.session.get('event_date')
@@ -221,7 +221,6 @@ def booking_summary(request):
     if not all([group_size, selected_events, quote_total, event_date, start_time]):
         return redirect('calendar_page')
 
-    # Find or create a booking object in session
     booking_id = request.session.get('booking_id')
     booking = Booking.objects.filter(id=booking_id).first() if booking_id else None
 
@@ -258,6 +257,7 @@ def booking_summary(request):
 
     context = {
         'booking': {
+            'id': booking.id if booking else "",
             'group_size': group_size,
             'selected_events': selected_events,
             'quote_total': quote_total,
@@ -268,7 +268,6 @@ def booking_summary(request):
         'form': form,
     }
     return render(request, 'users/booking_summary.html', context)
-
 
 
 def pay_now(request):
@@ -489,7 +488,7 @@ def start_event(request, event_code):
             })
             EDartsGroup.objects.filter(event=event).delete()
 
-            for i, group_players in enumerate(group_list, start=1):
+            for i, group_players in enumerate(group_list, start=1)
                 group = EDartsGroup.objects.create(
                     event=event,
                     group_number=i,
