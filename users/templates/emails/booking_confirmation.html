@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Confirmation</title>
+  <style>
+    body {
+      background: #181818 !important;
+      color: #eee !important;
+      font-family: 'Segoe UI', Arial, sans-serif !important;
+    }
+    .container {
+      max-width: 440px;
+      margin: 40px auto;
+      border-radius: 18px;
+      border: 2px solid #17c0eb;
+      background: #16181b;
+      box-shadow: 0 2px 22px 0 #18233833;
+      padding: 0;
+    }
+    .header {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #1df676;
+      text-align: center;
+      padding: 28px 0 12px 0;
+      letter-spacing: 0.5px;
+    }
+    .summary-table {
+      width: 88%;
+      background: #1d1e22;
+      border-radius: 12px;
+      margin: 0 auto 22px auto;
+      box-shadow: 0 1px 6px #1112;
+      font-size: 1.06rem;
+      color: #eee;
+      border-collapse: collapse;
+    }
+    .summary-table td {
+      padding: 8px 12px;
+    }
+    .summary-label {
+      font-weight: 600;
+      color: #1df676;
+      min-width: 100px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .summary-value {
+      color: #f6f6f6;
+      text-align: left;
+    }
+    .summary-events li {
+      color: #36d1ff;
+      font-size: 1rem;
+      margin-left: 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    .cta {
+      display: inline-block;
+      margin-top: 18px;
+      background: #0099ff;
+      color: #fff !important;
+      text-decoration: none;
+      padding: 12px 32px;
+      border-radius: 10px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .footer {
+      color: #aaa;
+      font-size: 0.98rem;
+      margin-top: 22px;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .container { max-width: 99vw; border-radius: 0; }
+      .summary-table { font-size: 1rem; padding: 10px 5px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      Booking Confirmed 🎉
+    </div>
+    <table class="summary-table">
+      <tr>
+        <td class="summary-label">Date:</td>
+        <td class="summary-value">{{ booking.event_date }}</td>
+      </tr>
+      <tr>
+        <td class="summary-label">Time:</td>
+        <td class="summary-value">{{ booking.start_time }}</td>
+      </tr>
+      <tr>
+        <td class="summary-label">Group size:</td>
+        <td class="summary-value">{{ booking.group_size }}</td>
+      </tr>
+      <tr>
+        <td class="summary-label">Events:</td>
+        <td class="summary-value">
+          <ul style="margin:0; padding:0;">
+            {% for event in booking.selected_events %}
+            <li>{{ event|capfirst }}</li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td class="summary-label">Total:</td>
+        <td class="summary-value"><b>£{{ booking.quote_total }}</b></td>
+      </tr>
+    </table>
+    <div style="color:#1df676; margin-top: 24px; text-align: center; font-size: 1.2rem; font-weight: 600;">
+      Thanks for booking with Plum Events!
+    </div>
+    <div style="color: #17c0eb; margin: 8px 0 18px 0; text-align: center;">
+      We’ll be in touch soon to confirm the final details.<br>
+      If you have any questions, just reply to this email.
+    </div>
+    <div style="text-align:center; margin-top: 12px;">
+      <a href="https://plumevents.co.uk/" class="cta">Visit Website</a>
+    </div>
+    <div class="footer">See you soon! 🏆</div>
+  </div>
+</body>
+</html>

@@ -309,23 +309,21 @@ def pay_now(request):
         'start_time': start_time,
     })
 
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+
 def send_booking_confirmation_email(booking):
     subject = "Your Plum Events Booking Confirmation"
-    message = render_to_string('emails/booking_confirmation.txt', {'booking': booking})
-    recipients = [booking.email, "contact@plumevents.co.uk"]
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to = [booking.email, "contact@plumevents.co.uk"]
+    context = {'booking': booking}
 
-    print("DEBUG: Preparing to send email.")
-    print(f"DEBUG: Subject: {subject}")
-    print(f"DEBUG: Recipients: {recipients}")
-    print(f"DEBUG: From: {settings.DEFAULT_FROM_EMAIL}")
-    print(f"DEBUG: Message Body:\n{message}")
+    html_content = render_to_string('emails/booking_confirmation.html', context)
+    text_content = render_to_string('emails/booking_confirmation.txt', context)  # fallback plain text
 
-    try:
-        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipients, fail_silently=False)
-        print("DEBUG: Email sent successfully!")
-    except Exception as e:
-        print("ERROR: Email sending failed:", e)
-
+    email = EmailMultiAlternatives(subject, text_content, from_email, to)
+    email.attach_alternative(html_content, "text/html")
+    email.send()
 
 
 def contact_us(request):
