@@ -14,7 +14,7 @@
   </thead>
   <tbody>
     {% for player in all_players %}
-      <tr class="{% if player == current_player %}table-success{% endif %}">
+      <tr class="{% if player == current_player %}highlight-row{% endif %}">
         <td>{{ forloop.counter }}</td>
         <td>{{ player.participant.username }}</td>
         <td>{{ player.calculated_played }}</td>
