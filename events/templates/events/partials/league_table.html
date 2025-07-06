@@ -2,54 +2,24 @@
   <h3 class="text-center text-success mb-3">🏁 Final Standings</h3>
 {% endif %}
 
-<style>
-  .highlight-row {
-    background-color: #1f2f1f !important;
-    border-left: 4px solid #FFD700;
-    font-weight: 600;
-  }
-</style>
-
-<table class="table table-dark table-bordered text-center align-middle">
+<table class="table table-dark table-bordered text-center">
   <thead>
     <tr>
       <th>Rank</th>
       <th>Player</th>
       <th>Played</th>
       <th>Wins</th>
-      {% if league_completed %}
-        <th>Points</th>
-      {% endif %}
+      <th>Points</th>
     </tr>
   </thead>
   <tbody>
     {% for player in all_players %}
-      <tr class="{% if player == current_player %}highlight-row{% endif %}">
-        <td>
-          {% if player.finish_rank == 1 %}
-            🥇
-          {% elif player.finish_rank == 2 %}
-            🥈
-          {% elif player.finish_rank == 3 %}
-            🥉
-          {% else %}
-            {{ player.finish_rank }}
-          {% endif %}
-        </td>
+      <tr class="{% if player == current_player %}table-success{% endif %}">
+        <td>{{ forloop.counter }}</td>
         <td>{{ player.participant.username }}</td>
         <td>{{ player.calculated_played }}</td>
         <td>{{ player.calculated_wins }}</td>
-        {% if league_completed %}
-          <td>
-            {% if player.points_awarded is not None and player.points_awarded != 0 %}
-              {{ player.points_awarded|floatformat:1 }}
-            {% elif player.points_awarded == 0 %}
-              0
-            {% else %}
-              –
-            {% endif %}
-          </td>
-        {% endif %}
+        <td>{{ player.points_awarded|default:"–" }}</td>
       </tr>
     {% endfor %}
   </tbody>
