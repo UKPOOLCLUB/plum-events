@@ -9,4 +9,4 @@ Total Paid: £{{ booking.quote_total }}
 If you have any special requests please reply to this email.
 We look forward to seeing you and will be in touch with more information before the big day!
 
-Plum Events Team
+The Plum Events Team
