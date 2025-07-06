@@ -124,8 +124,8 @@ class PoolLeaguePlayer(models.Model):
     wins = models.PositiveIntegerField(default=0)
     losses = models.PositiveIntegerField(default=0)
     frames_won = models.PositiveIntegerField(default=0)  # optional, in case of tie-breaking
-    points_awarded = models.PositiveIntegerField(default=0)
-    finish_rank = models.PositiveIntegerField(null=True, blank=True)
+    points_awarded = models.FloatField(default=0)
+    finish_rank = models.IntegerField(null=True, blank=True)
     has_finished = models.BooleanField(default=False)
 
     def __str__(self):
