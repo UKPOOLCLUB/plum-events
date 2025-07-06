@@ -1,12 +1,12 @@
 Hi {{ booking.name }},
 
 Thank you for booking with Plum Events!
-Your event is confirmed for {{ booking.event_date }} at {{ booking.start_time }}.
+Your event is booked in for {{ booking.event_date }} at {{ booking.start_time }}.
 Group size: {{ booking.group_size }}
 Events: {{ booking.selected_events|join:", " }}
 Total Paid: £{{ booking.quote_total }}
 
 If you have any special requests please reply to this email.
-We look forward to seeing you!
+We look forward to seeing you and will be in touch with more information before the big day!
 
 Plum Events Team
