@@ -1,5 +1,25 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<style>
+    body { background: #181818; }
+    .booking-outer { max-width: 420px; margin: 40px auto; padding: 0; border-radius: 18px; border: 2px solid #17c0eb; box-shadow: 0 2px 22px 0 #18233833; background: #16181b; }
+    .booking-header { font-size: 2rem; font-weight: bold; color: #16e061; text-align: center; padding-top: 28px; padding-bottom: 12px; letter-spacing: 0.5px; }
+    .summary-table { width: 90%; background: #1d1e22; border-radius: 12px; margin: 0 auto 22px auto; box-shadow: 0 1px 6px #1112; font-size: 1.06rem; color: #eee; }
+    .summary-table tr { height: 35px; }
+    .summary-label { font-weight: 600; color: #1df676; min-width: 100px; text-align: left; padding-top: 8px; padding-right: 14px; padding-left: 14px; vertical-align: top; }
+    .summary-value { text-align: left; color: #f6f6f6; }
+    .summary-events { margin: 0; padding: 0; list-style: none; }
+    .summary-events li { margin: 0; padding: 0; font-size: 1rem; }
+    .booking-form-title { color: #1df676; text-align: center; font-size: 1.35rem; font-weight: 600; margin-bottom: 16px; margin-top: 14px; letter-spacing: 0.2px; }
+    form label { color: #1df676; font-weight: 500; font-size: 1.01rem; margin-bottom: 4px; }
+    form input { background: #23262b; color: #fff; border: 1.4px solid #17c0eb; border-radius: 8px; margin-bottom: 10px; padding: 9px 12px; width: 100%; font-size: 1.06rem; }
+    .btn-primary { background: #0099ff !important; border: none; font-weight: 600; border-radius: 8px; padding: 12px; width: 100%; margin-top: 6px; font-size: 1.1rem; letter-spacing: 0.2px; }
+    .btn-warning { background: grey !important; color: #181818 !important; font-weight: 700; border: none; border-radius: 8px; padding: 12px; width: 100%; margin-top: 13px; font-size: 1.07rem; letter-spacing: 0.1px; transition: filter 0.11s; }
+    .btn-warning:hover { background: #17c0eb22 !important; color: #0099ff !important; text-decoration: none; }
+    @media (max-width: 600px) { .booking-outer { max-width: 99vw; border-radius: 0; } .summary-table { font-size: 1rem; padding: 10px 5px; } }
+</style>
+
 <div class="booking-outer">
     <div class="booking-header">Payment</div>
     <table class="summary-table">
