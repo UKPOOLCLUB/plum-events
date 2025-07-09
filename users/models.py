@@ -36,6 +36,7 @@ class Booking(models.Model):
     name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
+    special_requests = models.TextField(blank=True, null=True, help_text="Let us know about any special requests, rules, or timings.")
     group_size = models.PositiveIntegerField()
     selected_events = models.JSONField()  # Store as list of event names
     quote_total = models.PositiveIntegerField()

@@ -127,11 +127,12 @@
         <div style="margin-top:10px;"><strong>Duration:</strong> {{ expected_duration }}</div>
     </div>
 
-    <div class="calendar-header" style="font-size: 1.45rem; margin-top: 10px;">Choose Your Date</div>
       <form method="POST" id="date-form" autocomplete="off" style="margin:0 20px;">
         {% csrf_token %}
         <input type="hidden" name="num_events" value="{{ selected_event_count|default:3 }}">
         <label for="event_date" class="calendar-form-label">Event Date</label>
+          <div id="pretty-date" style="margin-bottom:10px; color:#1df676; font-size:1.07rem;"></div>
+
         <input type="text"
                class="calendar-input"
                name="event_date"
@@ -163,6 +164,30 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
+    function formatPrettyDate(isoDateStr) {
+    if (!isoDateStr) return '';
+    // Format: Saturday, 19 July 2025
+    const months = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December"
+    ];
+    const days = [
+        "Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"
+    ];
+    const d = new Date(isoDateStr);
+    if (isNaN(d.getTime())) return '';
+    return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Initial pretty date (on load)
+const dateInput = document.getElementById('event_date');
+const prettyDateDiv = document.getElementById('pretty-date');
+function updatePrettyDate() {
+    prettyDateDiv.textContent = dateInput.value ? formatPrettyDate(dateInput.value) : '';
+}
+dateInput.addEventListener('input', updatePrettyDate);
+document.addEventListener('DOMContentLoaded', updatePrettyDate);
+
 document.addEventListener('DOMContentLoaded', function () {
     // Helper to check if both fields are valid
     function checkReady() {

@@ -24,6 +24,8 @@ import stripe
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+
 
 
 def landing_page(request):
@@ -227,6 +229,7 @@ def booking_summary(request):
     if request.method == 'POST':
         form = BookingContactForm(request.POST)
         if form.is_valid():
+            special_requests = form.cleaned_data.get('special_requests', "")
             if not booking:
                 booking = Booking.objects.create(
                     name=form.cleaned_data['name'],
@@ -237,22 +240,22 @@ def booking_summary(request):
                     group_size=group_size,
                     selected_events=selected_events,
                     quote_total=quote_total,
+                    special_requests=special_requests,   # <--- ADDED HERE
                 )
                 request.session['booking_id'] = booking.id
             else:
                 booking.name = form.cleaned_data['name']
                 booking.email = form.cleaned_data['email']
                 booking.phone = form.cleaned_data['phone']
+                booking.special_requests = special_requests   # <--- ADDED HERE
                 booking.save()
-            # 🚩 Redirect to payment summary page
             return redirect('booking_payment', booking_id=booking.id)
-        # If invalid, fall through to re-render form with errors
-
     else:
         form = BookingContactForm(initial={
             'name': booking.name if booking else "",
             'email': booking.email if booking else "",
             'phone': booking.phone if booking else "",
+            'special_requests': booking.special_requests if booking else "",   # <--- ADDED HERE
         })
 
     context = {
@@ -309,10 +312,13 @@ def pay_now(request):
         'start_time': start_time,
     })
 
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
 
 def send_booking_confirmation_email(booking):
+    # 1. Mark the date as full
+    availability, created = EventAvailability.objects.get_or_create(date=booking.event_date)
+    availability.status = 'full'
+    availability.save()
+
     subject = "Your Plum Events Booking Confirmation"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [booking.email, "contact@plumevents.co.uk"]

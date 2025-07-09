@@ -16,6 +16,7 @@ class BookingAdmin(admin.ModelAdmin):
         'id',
         'name',
         'email',
+        'special_requests',
         'event_date',
         'start_time',
         'group_size',
