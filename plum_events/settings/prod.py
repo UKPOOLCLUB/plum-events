@@ -10,8 +10,8 @@ USE_X_FORWARDED_HOST = True
 
 ALLOWED_HOSTS = [
     'plum-events.onrender.com',
-    'www.plumevents.com',
-    'plumevents.com',
+    'www.plumevents.co.uk',
+    'plumevents.co.uk',
 ]
 
 DATABASES = {
