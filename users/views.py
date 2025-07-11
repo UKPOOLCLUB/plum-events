@@ -727,7 +727,7 @@ def create_checkout_session(request, booking_id):
 
     # This string is required by Stripe!
     success_url = "https://plum-events.onrender.com/payment/success/?session_id={CHECKOUT_SESSION_ID}"
-    cancel_url = request.build_absolute_uri(reverse('payment_cancel'))
+    cancel_url = request.build_absolute_uri(reverse('   payment_cancel'))
 
     print("DEBUG Stripe success_url:", success_url)
 
@@ -847,4 +847,4 @@ def payment_success(request):
     return render(request, 'users/payment_success.html', {'booking': booking})
 
 def payment_cancel(request):
-    return render(request, 'payment_cancel.html')
+    return render(request, 'users/payment_cancel.html')
