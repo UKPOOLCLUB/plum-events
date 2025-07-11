@@ -1,99 +1,80 @@
 {% load static %}
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plum Events</title>
 
-    <!-- ✅ Bootstrap CDN -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'css/plum_theme.css' %}">
-    <!-- Font Awesome (latest version) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
-
+    <!-- Font Awesome (latest) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Flatpickr CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Your custom theme (optional) -->
+    <link rel="stylesheet" href="{% static 'css/plum_theme.css' %}">
+    <style>
+      body.plum-theme {
+        /* Set background image, fallback color, fixed and cover */
+        background: #181818 url("{% static 'users/background_pool_club.jpeg' %}") no-repeat center center fixed;
+        background-size: cover;
+        position: relative;
+        min-height: 100vh;
+      }
+      body.plum-theme::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(24,24,24, 0.86); /* dark overlay */
+        z-index: 0;
+        pointer-events: none;
+      }
+      main, .container, .navbar, footer {
+        position: relative;
+        z-index: 1;
+      }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}plum-theme{% endblock %}">
-    {% if event and event.has_started %}
+    <!-- NAVBAR (customise as you wish, example below) -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary mb-4">
       <div class="container-fluid">
-        <a class="navbar-brand fw-bold text-accent" href="{% url 'live_leaderboard' event.code %}">
-            <h2 class="mb-1 neon-heading mb-0">🏆 {{ event.name }} 🏆</h2>
+        <a class="navbar-brand fw-bold text-accent" href="/">
+          <h2 class="mb-1 neon-heading mb-0">Plum Events</h2>
         </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks" aria-controls="navLinks" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="navLinks">
-        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link text-accent" href="{% url 'live_leaderboard' event.code %}">🏆 Leaderboard</a>
-          </li>
-          {% for game_code in event.selected_games %}
-            {% if game_code == "mini_golf" %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'my_golf_score_entry' event.code %}">⛳️ Mini Golf</a></li>
-            {% elif game_code == "table_tennis" %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'table_tennis_game_view' event.id %}">🏓 Table Tennis</a></li>
-            {% elif game_code == "pool_league" %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'pool_league_view' event.id %}">🎱 Pool</a></li>
-            {% elif game_code == "e_darts" %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'enter_edarts_results' event.id %}">🎯 E-Darts</a></li>
-            {% elif game_code == "killer_pool" %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'killer_game' event.id %}">💀 Killer</a></li>
-            {% endif %}
-          {% endfor %}
-        </ul>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks" aria-controls="navLinks" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navLinks">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <!-- Example nav items, update as needed -->
+            <li class="nav-item"><a class="nav-link" href="{% url 'enter_event_code' %}">Join Event</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'get_quote' %}">Create Event</a></li>
+          </ul>
+        </div>
       </div>
-    {% endif %}
-  </div>
-</nav>
+    </nav>
 
+    <!-- PAGE CONTENT -->
     <div class="container pt-0 pb-2">
         {% block content %}
         {% endblock %}
     </div>
 
-    <!-- ✅ Bootstrap JS (optional, for modals, dropdowns, etc.) -->
+    <!-- FOOTER -->
+    <footer class="text-white py-4 mt-4" style="background: #16181b; color: #eee; border-top: 2.5px solid #17c0eb;">
+      <div class="container text-center">
+        <small>&copy; 2025 Plum Events Ltd. All rights reserved.</small>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS (for modals, nav, etc) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const pollingUrl = document.body.dataset.pollingUrl;
-        const pollingInterval = 3000; // milliseconds
-        let lastState = null;
-
-        if (pollingUrl) {
-          setInterval(() => {
-            fetch(pollingUrl)
-              .then(res => res.json())
-              .then(data => {
-                const newState = JSON.stringify(data);
-
-                if (lastState !== null && newState !== lastState) {
-                  if (data.has_started && window.leaderboardRedirectUrl) {
-                    window.location.href = window.leaderboardRedirectUrl;
-                  } else {
-                    location.reload();
-                  }
-                }
-
-                lastState = newState;
-              })
-              .catch(error => {
-                console.warn("Polling failed:", error);
-              });
-          }, pollingInterval);
-        }
-      });
-    </script>
-
-<!-- Flatpickr JS -->
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
+    <!-- Flatpickr JS (optional, for date pickers) -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </body>
-
 </html>
