@@ -27,6 +27,9 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 
 
+def test_home(request):
+    return HttpResponse("Hello from Render!")
+
 
 def landing_page(request):
     form = ContactForm()
