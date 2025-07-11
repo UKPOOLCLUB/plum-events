@@ -17,21 +17,7 @@
     <!-- Your custom theme (optional) -->
     <link rel="stylesheet" href="{% static 'css/plum_theme.css' %}">
     <style>
-      body.plum-theme {
-        /* Set background image, fallback color, fixed and cover */
-        background: #181818 url("{% static 'users/background_pool_club.jpeg' %}") no-repeat center center fixed;
-        background-size: cover;
-        position: relative;
-        min-height: 100vh;
-      }
-      body.plum-theme::before {
-        content: "";
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(24,24,24, 0.86); /* dark overlay */
-        z-index: 0;
-        pointer-events: none;
-      }
+
       main, .container, .navbar, footer {
         position: relative;
         z-index: 1;
