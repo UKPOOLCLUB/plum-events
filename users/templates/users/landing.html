@@ -1,7 +1,7 @@
+{% extends "base.html" %}
 {% load static %}
 
-
-
+{% block content %}
 
   <!-- Hero Section -->
   <section class="hero">
@@ -174,13 +174,13 @@
           <img src="{% static 'users/plum_events_2.jpg' %}" class="d-block w-100" alt="Event Photo 2">
         </div>
         <div class="carousel-item">
-          <img src="{% static 'users/plum_events_6.jpg' %}" class="d-block w-100" alt="Event Photo 3">
+          <img src="{% static 'users/plum_events_3.jpg' %}" class="d-block w-100" alt="Event Photo 3">
         </div>
         <div class="carousel-item">
-          <img src="{% static 'users/plum_events_7.JPG' %}" class="d-block w-100" alt="Event Photo 4">
+          <img src="{% static 'users/plum_events_4.JPG' %}" class="d-block w-100" alt="Event Photo 4">
         </div>
         <div class="carousel-item">
-          <img src="{% static 'users/plum_events_8.jpeg' %}" class="d-block w-100" alt="Event Photo 5">
+          <img src="{% static 'users/plum_events_5.jpeg' %}" class="d-block w-100" alt="Event Photo 5">
         </div>
       </div>
       <button class="carousel-control-prev" type="button" data-bs-target="#eventCarousel" data-bs-slide="prev">
@@ -228,7 +228,9 @@
   </div>
 </div>
 
+{% endblock %}
 
+{% block extra_head %}
 <style>
 
     .hero {
@@ -648,6 +650,8 @@
 
 
 </style>
+{% endblock %}
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
