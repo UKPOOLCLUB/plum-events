@@ -1,20 +1,10 @@
-body, body.plum-theme {
-  background: #181818 url('/static/users/background_pool_club.jpeg') no-repeat center center fixed;
-  background-size: cover;
+
+body,
+body.plum-theme {
+  background-color: #121212;
   color: #f0f0f0;
   font-family: 'Rubik', sans-serif;
-  position: relative;
 }
-
-body::before {
-  content: "";
-  position: fixed;
-  z-index: 0;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(24,24,24, 0.66);
-  pointer-events: none;
-}
-
 
 h2, h3, h4 {
   color: #00FFAB;
