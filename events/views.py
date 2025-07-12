@@ -344,11 +344,8 @@ def table_tennis_state(request, event_id):
     try:
         event = get_object_or_404(Event, id=event_id)
         config = event.table_tennis_config
-        finished_players = list(
-            TableTennisPlayer.objects.filter(event=event, has_finished=True).order_by('finish_rank'))
-        active_players = list(
-            TableTennisPlayer.objects.filter(event=event, has_finished=False).order_by('queue_position'))
-        players = finished_players + active_players
+        players = list(TableTennisPlayer.objects.filter(event=event).order_by('has_finished', 'queue_position'))
+
         # Count how many players have finished
         finished_count = sum(p.has_finished for p in players)
 
